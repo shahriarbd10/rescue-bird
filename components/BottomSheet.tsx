@@ -55,19 +55,22 @@ export default function BottomSheet({
     if (isDesktop) return;
 
     const { offset, velocity } = info;
-    const threshold = 100;
+    const threshold = 60; // Lower threshold for faster response
 
     if (onSnapChange) {
-      if (velocity.y < -300 || offset.y < -threshold) {
+      if (velocity.y < -200 || offset.y < -threshold) {
         // Dragged UP
         if (snapPoint === "mini") onSnapChange("standard");
         else if (snapPoint === "standard") onSnapChange("expanded");
         else onSnapChange("expanded"); // Stay expanded
-      } else if (velocity.y > 300 || offset.y > threshold) {
-        // Dragged DOWN
         if (snapPoint === "expanded") onSnapChange("standard");
         else if (snapPoint === "standard") onSnapChange("mini");
         else if (snapPoint === "mini" && onClose) onClose();
+      } else if (velocity.y > 200 || offset.y > threshold) {
+        // Dragged DOWN
+        if (snapPoint === "expanded") onSnapChange("standard");
+        else if (snapPoint === "standard") onSnapChange("mini");
+        else if (snapPoint === "mini") onSnapChange("mini"); // Stay at mini
       }
     }
   };
@@ -95,13 +98,13 @@ export default function BottomSheet({
         layout
         initial={false}
         animate={controls}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
         className={`bottom-sheet-shell`} 
         role="dialog" 
         aria-modal={isOpen && snapPoint !== "mini"}
         drag={isDesktop ? false : "y"}
         dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.05}
+        dragElastic={0.1}
         onDragEnd={handleDragEnd}
         style={{
           position: "fixed",
@@ -124,13 +127,18 @@ export default function BottomSheet({
       >
         {!isDesktop && (
           <div 
-            className="sheet-handle" 
+            className="sheet-handle-wrapper" 
             style={{ 
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              padding: "12px 0 20px",
               cursor: "grab",
-              marginBottom: "16px",
               flexShrink: 0
             }}
-          />
+          >
+            <div className="sheet-handle" />
+          </div>
         )}
         
         <div 

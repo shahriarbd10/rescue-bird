@@ -629,9 +629,10 @@ a {
 }
 
 .card-body {
-  font-size: 0.9rem;
-  color: #475569;
-  line-height: 1.4;
+  font-size: 0.95rem;
+  color: var(--text);
+  opacity: 0.85;
+  line-height: 1.5;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1442,4 +1443,30 @@ button.danger {
   .auth-brand-lite {
     padding: 16px;
   }
+}
+
+/* Bottom Sheet & Mobile UI Fixes */
+.sheet-handle-wrapper {
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheet-handle {
+  width: 44px;
+  height: 5px;
+  background: var(--line);
+  border-radius: 99px;
+  transition: all 0.2s ease;
+  opacity: 0.6;
+}
+
+.sheet-handle-wrapper:hover .sheet-handle,
+.sheet-handle-wrapper:active .sheet-handle {
+  background: var(--brand);
+  opacity: 1;
+}
+
+.status-msg {
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+  top: auto !important;
 }
