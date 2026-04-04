@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { BoltIcon, KeyIcon, MailIcon, ShieldIcon } from "@/components/BrandIcons";
 import BrandLogo from "@/components/BrandLogo";
 import Spinner from "@/components/Spinner";
@@ -13,9 +13,11 @@ export default function LoginClient() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(formData: FormData) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setLoading(true);
     setMessage("");
+    const formData = new FormData(event.currentTarget);
     const payload = Object.fromEntries(formData.entries());
 
     const res = await fetch("/api/auth/login", {
@@ -42,8 +44,8 @@ export default function LoginClient() {
   }
 
   return (
-    <div className="auth-wrap">
-      <section className="auth-brand stack">
+    <div className="auth-wrap auth-mobile-shell">
+      <section className="auth-brand stack auth-brand-lite">
         <span className="tag hero-tag">
           <ShieldIcon size={14} />
           Secure Access
@@ -79,14 +81,9 @@ export default function LoginClient() {
         </div>
       </section>
 
-      <section className="auth-panel stack">
+      <section className="auth-panel stack auth-panel-lite">
         <h2 className="subhead">Login</h2>
-        <form
-          className="grid"
-          action={async (fd) => {
-            await onSubmit(fd);
-          }}
-        >
+        <form className="grid" onSubmit={onSubmit}>
           <label className="field-with-icon">
             <span className="field-icon">
               <MailIcon size={16} />
@@ -99,7 +96,7 @@ export default function LoginClient() {
             </span>
             <input name="password" type="password" placeholder="Password" required />
           </label>
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading} aria-busy={loading}>
             {loading ? <Spinner label="Signing in" /> : "Login"}
           </button>
         </form>

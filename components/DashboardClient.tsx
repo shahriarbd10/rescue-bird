@@ -6,12 +6,19 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import SculptureLoader from "@/components/SculptureLoader";
 import BrandLogo from "@/components/BrandLogo";
-import { BoltIcon, CompassIcon, ShieldIcon } from "@/components/BrandIcons";
+import { BoltIcon, CompassIcon, MailIcon, ShieldIcon, UsersIcon } from "@/components/BrandIcons";
 import Spinner from "@/components/Spinner";
+
+import BottomSheet from "@/components/BottomSheet";
 
 const LiveMap = dynamic(() => import("@/components/LiveMap"), {
   ssr: false,
-  loading: () => <SculptureLoader lines={3} />
+  loading: () => (
+    <div className="full-screen-map-layout stack center" style={{ background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <SculptureLoader lines={3} />
+      <p className="muted">Initializing Tactical Map...</p>
+    </div>
+  )
 });
 
 type User = {
@@ -27,6 +34,8 @@ type Team = {
   name: string;
   areaNames: string[];
   coverageRadiusKm: number;
+  location?: { lat?: number | null; lng?: number | null } | null;
+  phone?: string;
 };
 
 type Alert = {
@@ -48,6 +57,7 @@ type Message = {
 };
 
 type TabId = "overview" | "alerts" | "operations" | "messages" | "admin";
+type GeoSearchResult = { label: string; lat: number; lng: number; score?: number };
 
 type MapData = {
   role: string;
@@ -92,15 +102,25 @@ export default function DashboardClient() {
   const [voiceNoteInput, setVoiceNoteInput] = useState("");
   const [locating, setLocating] = useState(false);
   const [sendingAlert, setSendingAlert] = useState(false);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [locationSearching, setLocationSearching] = useState(false);
+  const [locationResults, setLocationResults] = useState<GeoSearchResult[]>([]);
+
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const [recordingVoice, setRecordingVoice] = useState(false);
   const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [syncingLocation, setSyncingLocation] = useState(false);
+  const [teamLocationQuery, setTeamLocationQuery] = useState("");
+  const [teamLocationSearching, setTeamLocationSearching] = useState(false);
+  const [teamLocationResults, setTeamLocationResults] = useState<GeoSearchResult[]>([]);
+  const [teamLatInput, setTeamLatInput] = useState("");
+  const [teamLngInput, setTeamLngInput] = useState("");
   const autoSyncedUserRef = useRef<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const voiceChunksRef = useRef<BlobPart[]>([]);
+  const [isSheetOpen, setIsSheetOpen] = useState(true);
 
   const isUser = user?.role === "user";
   const isAdmin = user?.role === "admin";
@@ -141,6 +161,17 @@ export default function DashboardClient() {
     setAlerts(alertJson.alerts || []);
     setMapData(mapJson);
 
+    if (Array.isArray(teamJson.teams) && teamJson.teams[0]?.location) {
+      const lat = teamJson.teams[0]?.location?.lat;
+      const lng = teamJson.teams[0]?.location?.lng;
+      if (typeof lat === "number") {
+        setTeamLatInput((prev) => (prev ? prev : lat.toString()));
+      }
+      if (typeof lng === "number") {
+        setTeamLngInput((prev) => (prev ? prev : lng.toString()));
+      }
+    }
+
     const teamId = meJson.user?.teamId || teamJson.teams?.[0]?._id || "";
     setSelectedTeamId((prev) => prev || teamId);
 
@@ -178,6 +209,11 @@ export default function DashboardClient() {
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, [voicePreviewUrl]);
+
+  useEffect(() => {
+    // When switching tabs, ensure sheet is open
+    setIsSheetOpen(true);
+  }, [activeTab]);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -302,6 +338,73 @@ export default function DashboardClient() {
     );
   }
 
+  async function searchLocation(query: string, target: "user" | "team", silent = false) {
+    const clean = query.trim();
+    if (clean.length < 3) {
+      if (target === "user") setLocationResults([]);
+      if (target === "team") setTeamLocationResults([]);
+      if (!silent) setStatus("Type at least 3 characters to search location.");
+      return;
+    }
+
+    if (target === "user") setLocationSearching(true);
+    if (target === "team") setTeamLocationSearching(true);
+
+    try {
+      const res = await fetch(`/api/location/search?q=${encodeURIComponent(clean)}`);
+      const json = await res.json();
+
+      if (target === "user") setLocationSearching(false);
+      if (target === "team") setTeamLocationSearching(false);
+
+      if (!res.ok) {
+        if (!silent) setStatus(json.error || "Location search failed.");
+        return;
+      }
+
+      const results = (json.results || []) as GeoSearchResult[];
+      if (target === "user") setLocationResults(results);
+      if (target === "team") setTeamLocationResults(results);
+      if (!results.length && !silent) setStatus("No matching location found.");
+    } catch {
+      if (target === "user") setLocationSearching(false);
+      if (target === "team") setTeamLocationSearching(false);
+      if (!silent) setStatus("Location search failed.");
+    }
+  }
+
+  const syncLocationByCoordinates = useCallback(async (lat: number, lng: number, successText: string) => {
+    setSyncingLocation(true);
+    await fetch("/api/map", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lat, lng })
+    });
+    setSyncingLocation(false);
+    await loadBase();
+    setStatus(successText);
+  }, [loadBase]);
+
+  async function pickUserLocation(result: GeoSearchResult) {
+    setLocationQuery(result.label);
+    setLatInput(result.lat.toFixed(6));
+    setLngInput(result.lng.toFixed(6));
+    if (!areaInput.trim()) {
+      const labelArea = result.label.split(",")[0]?.trim() || "";
+      if (labelArea) setAreaInput(labelArea);
+    }
+    setLocationResults([]);
+    await syncLocationByCoordinates(result.lat, result.lng, "Location selected and synced from search.");
+  }
+
+  function pickTeamLocation(result: GeoSearchResult) {
+    setTeamLocationQuery(result.label);
+    setTeamLatInput(result.lat.toFixed(6));
+    setTeamLngInput(result.lng.toFixed(6));
+    setTeamLocationResults([]);
+    setStatus("Team base location selected from search.");
+  }
+
   const syncCurrentLocation = useCallback(async (options?: PositionOptions) => {
     if (!navigator.geolocation) {
       setStatus("Geolocation is not supported on this device.");
@@ -312,14 +415,7 @@ export default function DashboardClient() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        await fetch("/api/map", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lat, lng })
-        });
-        setSyncingLocation(false);
-        await loadBase();
-        setStatus("Live location synced on map.");
+        await syncLocationByCoordinates(lat, lng, "Live location synced on map.");
       },
       () => {
         setSyncingLocation(false);
@@ -327,7 +423,7 @@ export default function DashboardClient() {
       },
       options || { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, [loadBase]);
+  }, [syncLocationByCoordinates]);
 
   useEffect(() => {
     if (!user) return;
@@ -340,6 +436,34 @@ export default function DashboardClient() {
 
     void syncCurrentLocation({ enableHighAccuracy: false, timeout: 7000, maximumAge: 300000 });
   }, [user, syncCurrentLocation]);
+
+  useEffect(() => {
+    const clean = locationQuery.trim();
+    if (clean.length < 3) {
+      setLocationResults([]);
+      setLocationSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void searchLocation(clean, "user", true);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [locationQuery]);
+
+  useEffect(() => {
+    const clean = teamLocationQuery.trim();
+    if (clean.length < 3) {
+      setTeamLocationResults([]);
+      setTeamLocationSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void searchLocation(clean, "team", true);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [teamLocationQuery]);
 
   async function teamCreateOrUpdate(formData: FormData) {
     setStatus("");
@@ -424,367 +548,327 @@ export default function DashboardClient() {
     return "tag danger";
   }
 
+  function tabIcon(tabId: TabId) {
+    if (tabId === "overview") return <BoltIcon size={16} />;
+    if (tabId === "alerts") return <CompassIcon size={16} />;
+    if (tabId === "messages") return <MailIcon size={16} />;
+    if (tabId === "operations") return <UsersIcon size={16} />;
+    return <ShieldIcon size={16} />;
+  }
+
   if (!user) {
     return (
-      <div className="stack">
+      <div className="stack center" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <SculptureLoader lines={3} />
-        <SculptureLoader lines={5} />
       </div>
     );
   }
 
   return (
-    <div className="stack rescue-shell dashboard-root">
-      <section className="hero stack rescue-hero">
-        <div className="row space">
-          <div>
-            <div className="row">
-              <BrandLogo size={32} />
-              <span className="tag hero-tag">
-                <ShieldIcon size={14} />
-                Emergency Operations
-              </span>
-            </div>
-            <h1 className="title" style={{ fontSize: "clamp(1.5rem, 4vw, 2.2rem)" }}>
-              Rescue Control
-            </h1>
-            <p style={{ marginTop: 6 }}>
-              {user.name} ({user.role}) | {user.email}
-            </p>
-          </div>
-          <button className="secondary" onClick={logout}>
-            Logout
-          </button>
-        </div>
-        <div className="kpi-grid">
-          <div className="kpi kpi-rich">
-            <span className="icon-pill">
-              <BoltIcon />
-            </span>
-            <p className="v">{alerts.length}</p>
-            <p className="l">Alerts in view</p>
-          </div>
-          <div className="kpi kpi-rich">
-            <span className="icon-pill">
-              <CompassIcon />
-            </span>
-            <p className="v">{openAlerts}</p>
-            <p className="l">Pending alerts</p>
-          </div>
-          <div className="kpi kpi-rich">
-            <span className="icon-pill">
-              <ShieldIcon />
-            </span>
-            <p className="v">{teams.length}</p>
-            <p className="l">Available teams</p>
-          </div>
-          <div className="kpi kpi-rich">
-            <span className="icon-pill">
-              <BoltIcon />
-            </span>
-            <p className="v">{messages.length}</p>
-            <p className="l">Current chat messages</p>
-          </div>
-        </div>
-        <div className="section-image-grid">
-          <Image
-            className="section-image"
-            src="/images/rescue-operations.svg"
-            alt="Emergency vehicles in response operation"
-            width={900}
-            height={600}
-          />
-          <Image
-            className="section-image"
-            src="/images/rescue-teamwork.svg"
-            alt="Rescue volunteers and team coordination"
-            width={900}
-            height={600}
-          />
-          <Image
-            className="section-image"
-            src="/images/rescue-relief.svg"
-            alt="Disaster relief operation in progress"
-            width={900}
-            height={600}
-          />
-        </div>
-        {status ? <span className="tag status-msg">{status}</span> : null}
-      </section>
-
-      <section className="card">
-        <div className="tabs">
-          {visibleTabs.map((tabId) => (
-            <button
-              key={tabId}
-              className={`tab ${activeTab === tabId ? "active" : ""}`}
-              onClick={() => setActiveTab(tabId)}
-            >
-              {tabId}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="card stack">
-        <div className="row space">
-          <h2 className="subhead">Live Location Map</h2>
-          <button className="secondary" onClick={() => syncCurrentLocation()} disabled={syncingLocation}>
-            {syncingLocation ? <Spinner label="Syncing" /> : "Refresh My Location"}
-          </button>
-        </div>
-        <p className="muted">
-          {isAdmin
-            ? "Admin view shows users, rescue teams, and alert locations."
-            : isTeamSide
-              ? "Team view shows your team coverage plus live assigned alerts."
-              : "User view shows your current location and your alert locations."}
-        </p>
+    <div className="dashboard-root">
+      {/* Background Layer: Tactical Map */}
+      <div className="full-screen-map-layout">
         {mapData ? (
           <LiveMap role={mapData.role} users={mapData.users} teams={mapData.teams} alerts={mapData.alerts} />
         ) : (
-          <SculptureLoader lines={3} />
+          <div className="stack center" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+             <SculptureLoader lines={3} />
+          </div>
         )}
-      </section>
+      </div>
 
-      {activeTab === "overview" ? (
-        <section className="card stack">
-          <h2 className="subhead">Operational Overview</h2>
-          <div className="list alerts-list">
-            <div className="tile">
-              <strong>Your role focus</strong>
-              <p className="muted">
-                {isUser
-                  ? "Use Alerts to quickly request help and stay connected with rescue teams."
-                  : "Monitor incoming incidents, coordinate with team members, and close alerts quickly."}
-              </p>
-            </div>
-            <div className="tile">
-              <strong>Message stream</strong>
-              <p className="muted">Select a team in Messages to view the latest conversation thread.</p>
-            </div>
-            <div className="tile">
-              <strong>Coverage intelligence</strong>
-              <p className="muted">Team matching uses both configured area names and base location radius.</p>
+      {/* Floating Header */}
+      <header className="top-nav-shell" style={{ padding: "8px 16px" }}>
+        <div className="row space" style={{ flexWrap: "nowrap" }}>
+          <div className="row" style={{ flexWrap: "nowrap" }}>
+            <BrandLogo size={28} />
+            <div className="stack" style={{ gap: 0 }}>
+              <strong style={{ fontSize: "0.95rem", lineHeight: 1 }}>Rescue Bird</strong>
+              <small className="muted" style={{ fontSize: "0.75rem" }}>{user.role.replace("_", " ")}</small>
             </div>
           </div>
-        </section>
+          <button className="secondary" style={{ padding: "6px 12px", fontSize: "0.85rem", borderRadius: "12px" }} onClick={logout}>
+            Logout
+          </button>
+        </div>
+      </header>
+
+      {/* Floating Action Buttons */}
+      <div className="fab-container">
+        <button className="fab secondary" onClick={() => syncCurrentLocation()} disabled={syncingLocation}>
+          <CompassIcon size={24} />
+        </button>
+        {isUser && (
+          <button className="fab" onClick={() => { setActiveTab("alerts"); setIsSheetOpen(true); }}>
+            <BoltIcon size={32} />
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-bottom-nav" aria-label="Dashboard navigation">
+        {visibleTabs.map((tabId) => (
+          <button
+            key={`mobile-${tabId}`}
+            className={`mobile-nav-item ${activeTab === tabId ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab(tabId);
+              setIsSheetOpen(true);
+            }}
+          >
+            {tabIcon(tabId)}
+            <span>{tabId}</span>
+          </button>
+        ))}
+      </nav>
+
+      {status ? (
+        <div style={{ position: "fixed", top: 80, left: "50%", transform: "translateX(-50%)", zIndex: 1600 }}>
+          <span className="tag status-msg" style={{ boxShadow: "var(--shadow)" }}>{status}</span>
+        </div>
       ) : null}
 
-      {activeTab === "alerts" ? (
-        <section className="card stack">
-          <h2 className="subhead">Alerts</h2>
+      {/* Interactive Bottom Sheet content */}
+      <BottomSheet isOpen={isSheetOpen} onClose={() => setIsSheetOpen(false)}>
+        {activeTab === "overview" && (
+          <section className="stack">
+            <div className="row space">
+               <h2 className="subhead">Operational Pulse</h2>
+               <div className="tag hero-tag">Live</div>
+            </div>
+            <div className="kpi-grid">
+              <div className="kpi">
+                <p className="l">Active Alerts</p>
+                <p className="v">{openAlerts}</p>
+              </div>
+              <div className="kpi">
+                <p className="l">Rescue Teams</p>
+                <p className="v">{teams.length}</p>
+              </div>
+            </div>
+            
+            <div className="list">
+               <div className="tile soft stack">
+                  <strong>Intelligence Feed</strong>
+                  <p className="muted" style={{ fontSize: "0.9rem" }}>
+                    {isUser 
+                      ? "The map shows nearby teams. Use the Bolt icon (FAB) to signal an emergency immediately."
+                      : "Real-time updates are active. Monitor incoming signals for immediate response dispatch."}
+                  </p>
+               </div>
+            </div>
 
-          {isUser ? (
-            <div className="card soft stack">
-              <span className="tag danger pulse">Emergency Form</span>
-              <form
-                className="grid"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void submitAlert();
-                }}
-              >
-                <input
-                  name="area"
-                  placeholder="Area (Mirpur, Dhanmondi, Gulshan...)"
-                  required
-                  value={areaInput}
-                  onChange={(event) => setAreaInput(event.target.value)}
-                />
-                <div className="row">
-                  <input
-                    name="lat"
-                    type="number"
-                    step="any"
-                    placeholder="Latitude"
-                    required
-                    value={latInput}
-                    onChange={(event) => setLatInput(event.target.value)}
-                  />
-                  <input
-                    name="lng"
-                    type="number"
-                    step="any"
-                    placeholder="Longitude"
-                    required
-                    value={lngInput}
-                    onChange={(event) => setLngInput(event.target.value)}
-                  />
-                </div>
-                <button type="button" className="secondary" onClick={detectLocation} disabled={locating}>
-                  {locating ? <Spinner label="Detecting location" /> : "Use My Location"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => syncCurrentLocation()}
-                  disabled={syncingLocation}
+            <div className="section-image-grid" style={{ gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <Image className="section-image" src="/images/rescue-operations.svg" alt="Ops" width={400} height={250} />
+              <Image className="section-image" src="/images/rescue-teamwork.svg" alt="Work" width={400} height={250} />
+            </div>
+          </section>
+        )}
+
+        {activeTab === "alerts" && (
+          <section className="stack">
+            <h2 className="subhead">Emergencies & Alerts</h2>
+            
+            {isUser && (
+              <div className="stack" style={{ gap: "16px" }}>
+                <div className="tag danger pulse" style={{ width: "fit-content" }}>Immediate Signal Required</div>
+                <form
+                  className="grid"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submitAlert();
+                  }}
                 >
-                  {syncingLocation ? <Spinner label="Syncing location" /> : "Sync Live Location"}
-                </button>
-                <textarea
-                  name="note"
-                  placeholder="Short note about your emergency situation"
-                  value={noteInput}
-                  onChange={(event) => setNoteInput(event.target.value)}
-                />
-                <input
-                  name="voiceNoteUrl"
-                  placeholder="Voice note URL (optional)"
-                  value={voiceNoteInput}
-                  onChange={(event) => setVoiceNoteInput(event.target.value)}
-                />
-                <div className="btn-row">
-                  {!recordingVoice ? (
-                    <button type="button" className="secondary" onClick={startVoiceRecording} disabled={uploadingVoice}>
-                      Start Voice Recording
+                  <input
+                    name="area"
+                    placeholder="Where are you? (e.g. Mirpur 10)"
+                    required
+                    value={areaInput}
+                    onChange={(event) => setAreaInput(event.target.value)}
+                  />
+                  <div className="location-search">
+                    <div className="location-field" style={{ flex: 1 }}>
+                      <input
+                        placeholder="Search landmark..."
+                        value={locationQuery}
+                        onChange={(event) => setLocationQuery(event.target.value)}
+                      />
+                      {locationResults.length > 0 && (
+                        <div className="suggestion-dropdown">
+                          {locationResults.map((result, idx) => (
+                            <button
+                              key={`${result.label}-${idx}`}
+                              type="button"
+                              className="suggestion-item"
+                              onClick={() => pickUserLocation(result)}
+                            >
+                              <span>{result.label}</span>
+                              <small>{result.lat.toFixed(4)}, {result.lng.toFixed(4)}</small>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => searchLocation(locationQuery, "user", false)}
+                      disabled={locationSearching}
+                    >
+                      {locationSearching ? <Spinner label=".." /> : <CompassIcon size={18} />}
                     </button>
-                  ) : (
-                    <button type="button" className="danger" onClick={stopVoiceRecording}>
-                      Stop Recording
-                    </button>
-                  )}
-                  {uploadingVoice ? <span className="muted"><Spinner label="Uploading voice" /></span> : null}
-                </div>
-                {voicePreviewUrl ? <audio controls src={voicePreviewUrl} style={{ width: "100%" }} /> : null}
-                <div className="btn-row">
-                  <button type="submit" className="danger" disabled={sendingAlert}>
-                    {sendingAlert ? <Spinner label="Sending emergency alert" /> : "Send Emergency Alert"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          ) : null}
-
-          <div className="list">
-            {alerts.length === 0 ? <p className="muted">No alerts found right now.</p> : null}
-            {alerts.map((alert) => (
-              <div className="tile stack" key={alert._id}>
-                <div className="row space">
-                  <span className={statusTagClass(alert.status)}>{alert.status}</span>
-                  <small className="muted">{new Date(alert.createdAt).toLocaleString()}</small>
-                </div>
-                <strong>{alert.area}</strong>
-                <p className="muted" style={{ margin: 0 }}>
-                  {alert.note || "No note provided"}
-                </p>
-                {alert.voiceNoteUrl ? (
-                  <a href={alert.voiceNoteUrl} target="_blank" className="muted">
-                    Open voice note
-                  </a>
-                ) : null}
-                {isTeamSide ? (
-                  <div className="btn-row">
-                    {alert.status === "open" ? (
-                      <button onClick={() => updateAlertState(alert._id, "accept")}>Accept</button>
-                    ) : null}
-                    {alert.status !== "resolved" ? (
-                      <button className="secondary" onClick={() => updateAlertState(alert._id, "resolve")}>
-                        Resolve
-                      </button>
-                    ) : null}
                   </div>
-                ) : null}
+                  
+                  <div className="row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <button type="button" className="secondary" onClick={detectLocation} disabled={locating}>
+                      {locating ? <Spinner label="..." /> : "Locate Me"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => syncCurrentLocation()}
+                      disabled={syncingLocation}
+                    >
+                      {syncingLocation ? <Spinner label="..." /> : "Sync Map"}
+                    </button>
+                  </div>
+
+                  <textarea
+                    name="note"
+                    placeholder="Tell us what's happening..."
+                    value={noteInput}
+                    onChange={(event) => setNoteInput(event.target.value)}
+                  />
+                  
+                  <div className="stack" style={{ gap: "10px" }}>
+                    {!recordingVoice ? (
+                      <button type="button" className="secondary row" style={{ justifyContent: "center" }} onClick={startVoiceRecording} disabled={uploadingVoice}>
+                        <MailIcon size={18} /> Record Voice Note
+                      </button>
+                    ) : (
+                      <button type="button" className="danger pulse" onClick={stopVoiceRecording}>
+                        Stop Recording...
+                      </button>
+                    )}
+                    {voicePreviewUrl && <audio controls src={voicePreviewUrl} style={{ width: "100%", borderRadius: "12px" }} />}
+                  </div>
+
+                  <button type="submit" className="danger" style={{ padding: "16px", borderRadius: "18px", fontSize: "1.1rem" }} disabled={sendingAlert}>
+                    {sendingAlert ? <Spinner label="Signaling..." /> : "ACTIVATE RESCUE SIGNAL"}
+                  </button>
+                </form>
               </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
+            )}
 
-      {activeTab === "operations" ? (
-        <section className="ops-grid">
-          <section className="card stack">
-            <h2 className="subhead">Team Coverage Setup</h2>
-            <form className="grid" action={teamCreateOrUpdate}>
-              <input name="teamId" placeholder="Team ID (fill to update existing team)" />
-              <input name="name" placeholder="Team name" required />
-              <input name="description" placeholder="Description" />
-              <input name="phone" placeholder="Team phone number" />
-              <input name="areaNames" placeholder="Covered areas, comma separated" />
-              <div className="row">
-                <input name="lat" type="number" step="any" placeholder="Base latitude" />
-                <input name="lng" type="number" step="any" placeholder="Base longitude" />
-              </div>
-              <input name="coverageRadiusKm" type="number" min="1" max="50" defaultValue={5} />
-              <button type="submit">Save Team Profile</button>
-            </form>
-          </section>
-
-          <section className="card stack">
-            <h2 className="subhead">Add Team Staff</h2>
-            <form className="grid" action={addStaff}>
-              <input name="teamId" placeholder="Team ID" required />
-              <input name="name" placeholder="Staff name" required />
-              <input name="email" type="email" placeholder="Staff email" required />
-              <input name="phone" placeholder="Staff phone number" />
-              <input name="password" type="password" placeholder="Temporary password" required />
-              <button type="submit">Create Staff Account</button>
-            </form>
-          </section>
-        </section>
-      ) : null}
-
-      {activeTab === "messages" ? (
-        <section className="card stack chat-layout">
-          <h2 className="subhead">Team Messaging</h2>
-          <div className="stack">
-            <div className="row">
-              <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)}>
-                <option value="">Select team</option>
-                {teams.map((team) => (
-                  <option key={team._id} value={team._id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-              <button className="secondary" onClick={() => loadMessages(selectedTeamId)}>
-                Refresh
-              </button>
+            <div className="list" style={{ marginTop: "20px" }}>
+              <p className="muted" style={{ fontSize: "0.85rem", fontWeight: 600, textTransform: "uppercase" }}>Incident History</p>
+              {alerts.length === 0 && <p className="muted">No recent activity.</p>}
+              {alerts.map((alert) => (
+                <div className="tile stack" key={alert._id} style={{ borderRadius: "20px", borderLeft: `4px solid var(--${alert.status === 'open' ? 'danger' : alert.status === 'accepted' ? 'warning' : 'success'})` }}>
+                  <div className="row space">
+                    <span className={statusTagClass(alert.status)}>{alert.status}</span>
+                    <small className="muted">{new Date(alert.createdAt).toLocaleTimeString()}</small>
+                  </div>
+                  <strong>{alert.area}</strong>
+                  {alert.note && <p className="muted">{alert.note}</p>}
+                  {isTeamSide && alert.status !== "resolved" && (
+                    <div className="row">
+                       {alert.status === "open" && <button style={{ flex: 1 }} onClick={() => updateAlertState(alert._id, "accept")}>Respond</button>}
+                       <button className="secondary" style={{ flex: 1 }} onClick={() => updateAlertState(alert._id, "resolve")}>Close</button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
+          </section>
+        )}
 
-            <form className="grid" action={sendMessage}>
-              <input type="hidden" name="teamId" value={selectedTeamId} />
-              <textarea name="body" placeholder="Type your message..." required />
-              <button type="submit" disabled={!selectedTeamId}>
-                Send Message
-              </button>
+        {activeTab === "operations" && (
+          <section className="stack">
+            <h2 className="subhead">Operational Logistics</h2>
+            <div className="tabs" style={{ marginBottom: "12px" }}>
+               <div className="tag hero-tag">Team Management</div>
+            </div>
+            <form className="grid" action={teamCreateOrUpdate}>
+              <input name="name" placeholder="Team Designator" required />
+              <input name="phone" placeholder="Contact Channel" />
+              <div className="location-search">
+                  <input
+                    placeholder="Base Location"
+                    value={teamLocationQuery}
+                    onChange={(event) => setTeamLocationQuery(event.target.value)}
+                  />
+                  <button type="button" className="secondary" onClick={() => searchLocation(teamLocationQuery, "team", false)}>
+                    <CompassIcon size={18} />
+                  </button>
+              </div>
+              <div className="row">
+                <input name="lat" type="number" step="any" placeholder="Lat" value={teamLatInput} readOnly />
+                <input name="lng" type="number" step="any" placeholder="Lng" value={teamLngInput} readOnly />
+              </div>
+              <button type="submit" className="brand">Secure Logistics Profile</button>
             </form>
-          </div>
+          </section>
+        )}
 
-          <div className="list">
-            {messages.length === 0 ? <p className="muted">No messages yet for this team.</p> : null}
-            {messages.map((message) => (
-              <div key={message._id} className="chat-bubble">
-                <small className="muted">
-                  {message.senderNameSnapshot} ({message.senderRoleSnapshot}) |{" "}
-                  {new Date(message.createdAt).toLocaleString()}
-                </small>
-                <p style={{ marginBottom: 0 }}>{message.body}</p>
+        {activeTab === "messages" && (
+           <section className="stack">
+              <h2 className="subhead">Coordination Hub</h2>
+              <div className="tile stack soft" style={{ borderRadius: "20px" }}>
+                 <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} style={{ background: "transparent", border: "none", fontWeight: 700 }}>
+                    <option value="">Select Target Team</option>
+                    {teams.map((team) => <option key={team._id} value={team._id}>{team.name}</option>)}
+                 </select>
+                 <textarea name="body" placeholder="Mission briefing or response update..." style={{ minHeight: "80px", border: "none", background: "rgba(0,0,0,0.03)" }} />
+                 <button onClick={() => {
+                    const body = (document.querySelector('textarea[name="body"]') as HTMLTextAreaElement).value;
+                    if (body) {
+                      const fd = new FormData();
+                      fd.append("teamId", selectedTeamId);
+                      fd.append("body", body);
+                      sendMessage(fd);
+                    }
+                 }} disabled={!selectedTeamId}>Transmit Deployment Info</button>
               </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
+              <div className="list">
+                 {messages.map((m) => (
+                    <div key={m._id} className="chat-bubble" style={{ borderRadius: "18px" }}>
+                       <strong>{m.senderNameSnapshot}</strong>
+                       <p style={{ margin: 0, fontSize: "0.95rem" }}>{m.body}</p>
+                       <small className="muted">{new Date(m.createdAt).toLocaleTimeString()}</small>
+                    </div>
+                 ))}
+              </div>
+           </section>
+        )}
 
-      {activeTab === "admin" && isAdmin ? (
-        <section className="card stack">
-          <h2 className="subhead">Admin Oversight</h2>
-          <p className="muted">
-            Users: {audit?.users.length || 0} | Recent messages: {audit?.messages.length || 0}
-          </p>
-          <div className="list">
-            {(audit?.messages || []).slice(0, 20).map((item) => (
-              <div key={item._id} className="tile">
-                <small className="muted">
-                  {item.senderNameSnapshot} ({item.senderRoleSnapshot}) | {new Date(item.createdAt).toLocaleString()}
-                </small>
-                <p style={{ marginBottom: 0 }}>{item.body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
+        {activeTab === "admin" && (
+          <section className="stack">
+             <h2 className="subhead">Command Center Oversight</h2>
+             <div className="kpi-grid">
+                <div className="kpi">
+                   <p className="l">Platform Users</p>
+                   <p className="v">{audit?.users.length || 0}</p>
+                </div>
+                <div className="kpi">
+                   <p className="l">Signals Transmitted</p>
+                   <p className="v">{audit?.messages.length || 0}</p>
+                </div>
+             </div>
+             <div className="list" style={{ marginTop: "16px" }}>
+                {audit?.messages.slice(0, 10).map((m) => (
+                   <div key={m._id} className="tile stack soft">
+                      <div className="row space">
+                         <strong>{m.senderNameSnapshot}</strong>
+                         <small className="muted">{new Date(m.createdAt).toLocaleTimeString()}</small>
+                      </div>
+                      <p className="muted" style={{ margin: 0 }}>{m.body}</p>
+                   </div>
+                ))}
+             </div>
+          </section>
+        )}
+      </BottomSheet>
     </div>
   );
 }

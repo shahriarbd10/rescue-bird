@@ -51,8 +51,8 @@ export default function RegisterClient() {
   }
 
   return (
-    <div className="auth-wrap">
-      <section className="auth-brand stack">
+    <div className="auth-wrap auth-mobile-shell">
+      <section className="auth-brand stack auth-brand-lite">
         <span className="tag hero-tag">
           <ShieldIcon size={14} />
           Rescue Bird
@@ -88,7 +88,7 @@ export default function RegisterClient() {
         </div>
       </section>
 
-      <section className="auth-panel stack">
+      <section className="auth-panel stack auth-panel-lite">
         <h2 className="subhead">Registration</h2>
         <form
           className="grid"

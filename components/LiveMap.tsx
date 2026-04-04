@@ -85,11 +85,17 @@ export default function LiveMap({ role, users, teams, alerts }: Props) {
   const center = points.length > 0 ? [points[0].lat, points[0].lng] : [23.8103, 90.4125];
 
   return (
-    <div className="map-wrap">
-      <MapContainer center={center as [number, number]} zoom={12} scrollWheelZoom style={{ height: 360, width: "100%" }}>
+    <div style={{ height: "100%", width: "100%", position: "relative" }}>
+      <MapContainer 
+        center={center as [number, number]} 
+        zoom={13} 
+        zoomControl={false}
+        scrollWheelZoom 
+        style={{ height: "100%", width: "100%" }}
+      >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
         {users.map((user) => {
@@ -100,19 +106,22 @@ export default function LiveMap({ role, users, teams, alerts }: Props) {
             <CircleMarker
               key={`user-${user._id}`}
               center={[lat as number, lng as number]}
-              radius={7}
-              pathOptions={{ color: "#0b67c1", fillColor: "#3fa2f6", fillOpacity: 0.85 }}
+              radius={8}
+              pathOptions={{ 
+                color: "#ffffff", 
+                fillColor: "#2563eb", 
+                fillOpacity: 1,
+                weight: 3
+              }}
             >
-              <Popup>
-                <strong>{user.name}</strong>
-                <br />
-                {user.role}
-                {user.lastLocationAt ? (
-                  <>
-                    <br />
-                    {new Date(user.lastLocationAt).toLocaleString()}
-                  </>
-                ) : null}
+              <Popup className="premium-popup">
+                <div className="stack" style={{ gap: "4px" }}>
+                  <strong style={{ fontSize: "1rem" }}>{user.name}</strong>
+                  <span className="tag hero-tag" style={{ fontSize: "10px", padding: "2px 6px" }}>{user.role.replace("_", " ")}</span>
+                  {user.lastLocationAt && (
+                    <small className="muted">Signal: {new Date(user.lastLocationAt).toLocaleTimeString()}</small>
+                  )}
+                </div>
               </Popup>
             </CircleMarker>
           );
@@ -125,42 +134,34 @@ export default function LiveMap({ role, users, teams, alerts }: Props) {
           const coverageMeters = Math.max(100, (team.coverageRadiusKm || 5) * 1000);
           const distanceKm = userPoint ? haversineKm(userPoint, { lat: lat as number, lng: lng as number }) : null;
           const isNear = distanceKm !== null ? distanceKm <= 5 : true;
-          const teamStroke = role === "user" ? (isNear ? "#0f9a72" : "#f0a310") : "#0f9a72";
-          const teamFill = role === "user" ? (isNear ? "#20c592" : "#f0b33c") : "#20c592";
+          const teamColor = isNear ? "#10b981" : "#f59e0b";
+          
           return (
             <div key={`team-${team._id}`}>
               <Circle
                 center={[lat as number, lng as number]}
                 radius={coverageMeters}
-                pathOptions={{ color: teamStroke, fillColor: teamFill, fillOpacity: 0.08 }}
+                pathOptions={{ color: teamColor, fillColor: teamColor, fillOpacity: 0.05, weight: 1 }}
               />
               <CircleMarker
                 center={[lat as number, lng as number]}
-                radius={8}
-                pathOptions={{ color: teamStroke, fillColor: teamFill, fillOpacity: 0.9 }}
+                radius={10}
+                pathOptions={{ 
+                  color: "#ffffff", 
+                  fillColor: teamColor, 
+                  fillOpacity: 1,
+                  weight: 3
+                }}
               >
-                <Popup>
-                  <strong>{team.name}</strong>
-                  <br />
-                  Coverage: {team.coverageRadiusKm || 5} km
-                  {distanceKm !== null ? (
-                    <>
-                      <br />
-                      Distance from you: {distanceKm.toFixed(2)} km
-                    </>
-                  ) : null}
-                  {team.phone ? (
-                    <>
-                      <br />
-                      Phone: {team.phone}
-                    </>
-                  ) : null}
-                  {team.areaNames?.length ? (
-                    <>
-                      <br />
-                      Areas: {team.areaNames.slice(0, 4).join(", ")}
-                    </>
-                  ) : null}
+                <Popup className="premium-popup">
+                  <div className="stack" style={{ gap: "8px" }}>
+                    <strong style={{ fontSize: "1.05rem" }}>{team.name}</strong>
+                    <div className="row" style={{ gap: "6px" }}>
+                      <span className="tag ok">Active</span>
+                      <small className="muted">{team.coverageRadiusKm || 5}km range</small>
+                    </div>
+                    {team.phone && <button className="secondary" style={{ width: "100%", padding: "8px" }}>Call Team</button>}
+                  </div>
                 </Popup>
               </CircleMarker>
             </div>
@@ -171,47 +172,56 @@ export default function LiveMap({ role, users, teams, alerts }: Props) {
           const lat = alert.location?.lat;
           const lng = alert.location?.lng;
           if (!valid(lat, lng)) return null;
-          const color = alert.status === "open" ? "#ce3a42" : "#f0a310";
+          const urgentColor = alert.status === "open" ? "#ef4444" : "#f59e0b";
           return (
             <CircleMarker
               key={`alert-${alert._id}`}
               center={[lat as number, lng as number]}
-              radius={7}
-              pathOptions={{ color, fillColor: color, fillOpacity: 0.85 }}
+              radius={9}
+              pathOptions={{ 
+                color: "#ffffff", 
+                fillColor: urgentColor, 
+                fillOpacity: 1,
+                weight: 3
+              }}
             >
-              <Popup>
-                <strong>Alert: {alert.area}</strong>
-                <br />
-                Status: {alert.status}
-                <br />
-                {new Date(alert.createdAt).toLocaleString()}
+              <Popup className="premium-popup">
+                <div className="stack" style={{ gap: "6px" }}>
+                  <strong style={{ color: "#ef4444" }}>EMERGENCY: {alert.area}</strong>
+                  <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>Status: {alert.status.toUpperCase()}</p>
+                  <small className="muted">{new Date(alert.createdAt).toLocaleString()}</small>
+                </div>
               </Popup>
             </CircleMarker>
           );
         })}
       </MapContainer>
 
-      <div className="map-legend">
-        <span className="legend-item">
-          <i className="dot user" /> User
-        </span>
-        <span className="legend-item">
-          <i className="dot team" /> Team
-        </span>
-        {role === "user" ? (
-          <>
-            <span className="legend-item">
-              <i className="dot squad-near" /> Nearby squad
-            </span>
-            <span className="legend-item">
-              <i className="dot squad-far" /> Farther squad
-            </span>
-          </>
-        ) : null}
-        <span className="legend-item">
-          <i className="dot alert" /> Live alert
-        </span>
-        <span className="muted">Role view: {role}</span>
+      {/* Floating Tactical Legend */}
+      <div style={{ 
+        position: "absolute", 
+        top: "100px", 
+        right: "16px", 
+        zIndex: 1000, 
+        background: "rgba(255,255,255,0.9)", 
+        backdropFilter: "blur(10px)",
+        padding: "12px",
+        borderRadius: "16px",
+        boxShadow: "var(--shadow)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        border: "1px solid rgba(255,255,255,0.5)"
+      }}>
+        <div className="row" style={{ gap: "8px", fontSize: "0.75rem", fontWeight: 700 }}>
+          <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb", border: "2px solid #fff", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} /> User Assets
+        </div>
+        <div className="row" style={{ gap: "8px", fontSize: "0.75rem", fontWeight: 700 }}>
+          <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#10b981", border: "2px solid #fff", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} /> Response Squads
+        </div>
+        <div className="row" style={{ gap: "8px", fontSize: "0.75rem", fontWeight: 700 }}>
+          <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ef4444", border: "2px solid #fff", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} /> Active Signals
+        </div>
       </div>
     </div>
   );

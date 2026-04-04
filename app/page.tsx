@@ -5,46 +5,49 @@ import BrandLogo from "@/components/BrandLogo";
 
 export default function HomePage() {
   return (
-    <main className="page stack motion-page">
-      <section className="hero stack">
-        <span className="tag hero-tag">
+    <main className="page stack motion-page marketing-shell">
+      <section className="hero stack marketing-hero" style={{ padding: "40px 24px", textAlign: "center", alignItems: "center" }}>
+        <div className="row center" style={{ marginBottom: "16px" }}>
+          <BrandLogo size={48} />
+        </div>
+        <span className="tag hero-tag" style={{ marginBottom: "8px" }}>
           <ShieldIcon size={14} />
-          Bangladesh Emergency Network
+          Bangladesh Tactical Response
         </span>
-        <div className="row">
-          <BrandLogo />
-          <strong>Rescue Bird Platform</strong>
-        </div>
-        <h1 className="title">Rescue Bird</h1>
-        <p>
-          A mobile-first emergency alert platform where users, rescue teams, and team staff coordinate fast help
-          during critical moments.
+        <h1 className="title" style={{ fontSize: "3rem", marginBottom: "12px" }}>Rescue Bird</h1>
+        <p style={{ maxWidth: "480px", margin: "0 auto 24px", fontSize: "1.1rem" }}>
+          Next-generation tactical coordination for citizens and rescue squads. 
+          Signal emergencies, track responders, and coordinate help in real-time.
         </p>
-        <div className="btn-row">
-          <Link href="/register">
-            <button>Create Account</button>
+        <div className="btn-row center" style={{ width: "100%", justifyContent: "center", gap: "16px" }}>
+          <Link href="/register" style={{ flex: 1, maxWidth: "200px" }}>
+            <button style={{ width: "100%", padding: "16px", borderRadius: "18px", fontSize: "1rem" }}>Initialize Account</button>
           </Link>
-          <Link href="/login">
-            <button className="secondary">Login</button>
+          <Link href="/login" style={{ flex: 1, maxWidth: "200px" }}>
+            <button className="secondary" style={{ width: "100%", padding: "16px", borderRadius: "18px", fontSize: "1rem" }}>Secure Login</button>
           </Link>
         </div>
-        <div className="hero-image-grid">
+        <div className="hero-image-grid" style={{ marginTop: "40px", width: "100%" }}>
           <Image
+            className="section-image"
             src="/images/rescue-operations.svg"
-            alt="Rescue response team in action"
-            width={900}
-            height={600}
+            alt="Rescue"
+            width={600}
+            height={400}
+            style={{ height: "180px" }}
           />
           <Image
+            className="section-image"
             src="/images/rescue-teamwork.svg"
-            alt="Disaster response and field coordination"
-            width={900}
-            height={600}
+            alt="Coordination"
+            width={600}
+            height={400}
+            style={{ height: "180px" }}
           />
         </div>
       </section>
 
-      <section className="kpi-grid">
+      <section className="kpi-grid marketing-kpis">
         <div className="kpi kpi-rich">
           <span className="icon-pill">
             <UsersIcon />
@@ -75,7 +78,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="card">
+      <section className="card marketing-features">
         <h2 className="subhead">How It Works</h2>
         <div className="section-image-grid">
           <Image
