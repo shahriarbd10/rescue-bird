@@ -56,6 +56,17 @@ footer {
   z-index: 1;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -65,6 +76,10 @@ a {
   width: min(1200px, 100%);
   margin: 0 auto;
   padding: 16px 16px 48px;
+}
+
+.motion-page {
+  animation: page-enter 0.45s ease both;
 }
 
 .grid {
@@ -117,6 +132,7 @@ a {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   padding: 14px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.2s ease;
 }
 
 .card.soft {
@@ -152,6 +168,22 @@ a {
   object-fit: cover;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.34);
+}
+
+.section-image-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 8px 0 2px;
+}
+
+.section-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(149, 184, 219, 0.45);
+  box-shadow: var(--shadow-soft);
 }
 
 .kpi-grid {
@@ -238,6 +270,14 @@ a {
   gap: 12px;
 }
 
+.auth-wrap > section {
+  animation: rise-in 0.52s ease both;
+}
+
+.auth-wrap > section:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
 .auth-panel {
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
@@ -280,6 +320,7 @@ a {
   padding: 8px 12px;
   font-weight: 700;
   white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
 .tab.active {
@@ -305,7 +346,7 @@ select {
   background: #fff;
   color: var(--text);
   outline: none;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
 
 input:focus,
@@ -313,6 +354,7 @@ textarea:focus,
 select:focus {
   border-color: #5ba2e6;
   box-shadow: 0 0 0 3px rgba(91, 162, 230, 0.15);
+  transform: translateY(-1px);
 }
 
 textarea {
@@ -329,11 +371,21 @@ button {
   font-weight: 700;
   letter-spacing: 0.01em;
   cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
 }
 
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(11, 103, 193, 0.22);
+}
+
+button:not(:disabled):active {
+  transform: translateY(0);
 }
 
 button.secondary {
@@ -363,6 +415,12 @@ button.danger {
   background: #fff;
   border: 1px solid var(--line);
   box-shadow: var(--shadow-soft);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 26px rgba(19, 66, 112, 0.11);
 }
 
 .feature-tile {
@@ -475,6 +533,7 @@ button.danger {
   background: #f8fbff;
   border-radius: var(--radius-md);
   padding: 10px 12px;
+  animation: rise-in 0.35s ease both;
 }
 
 .rescue-shell {
@@ -503,6 +562,55 @@ button.danger {
   grid-column: 1 / -1;
 }
 
+.map-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.map-wrap .leaflet-container {
+  z-index: 1;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  background: #f8fbff;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.dot.user {
+  background: #3fa2f6;
+}
+
+.dot.team {
+  background: #20c592;
+}
+
+.dot.alert {
+  background: #ce3a42;
+}
+
 .rescue-hero {
   position: relative;
   overflow: hidden;
@@ -522,6 +630,32 @@ button.danger {
 
 .pulse {
   animation: pulse 1.8s infinite;
+}
+
+.status-msg {
+  animation: rise-in 0.24s ease both;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes pulse {
@@ -553,6 +687,14 @@ button.danger {
 
   .hero-image-grid img {
     height: 126px;
+  }
+
+  .section-image-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .section-image {
+    height: 140px;
   }
 
   .auth-image {
@@ -590,5 +732,9 @@ button.danger {
 
   .title {
     font-size: clamp(1.45rem, 8vw, 2rem);
+  }
+
+  .section-image {
+    height: 108px;
   }
 }

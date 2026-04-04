@@ -11,7 +11,12 @@ const UserSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     role: { type: String, enum: userRoles, required: true },
     verifiedAt: { type: Date, default: null },
-    teamId: { type: mongoose.Schema.Types.ObjectId, ref: "RescueTeam", default: null }
+    teamId: { type: mongoose.Schema.Types.ObjectId, ref: "RescueTeam", default: null },
+    currentLocation: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null }
+    },
+    lastLocationAt: { type: Date, default: null }
   },
   { timestamps: true }
 );

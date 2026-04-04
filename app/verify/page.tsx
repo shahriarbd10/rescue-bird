@@ -7,7 +7,7 @@ type VerifyPageProps = {
 export default async function VerifyPage({ searchParams }: VerifyPageProps) {
   const params = await searchParams;
   return (
-    <main className="page">
+    <main className="page motion-page">
       <VerifyOtpClient initialEmail={params.email || ""} />
     </main>
   );

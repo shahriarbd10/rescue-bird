@@ -80,8 +80,8 @@ export default function VerifyOtpClient({ initialEmail = "" }: Props) {
         <p>Enter the six-digit OTP from your email to complete account activation.</p>
         <Image
           className="auth-image"
-          src="https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=80"
-          alt="Emergency responder equipment"
+          src="https://source.unsplash.com/1200x800/?search,rescue,night"
+          alt="Rescue response and emergency deployment"
           width={1200}
           height={800}
         />
@@ -119,7 +119,7 @@ export default function VerifyOtpClient({ initialEmail = "" }: Props) {
         <button className="secondary" onClick={resendOtp} disabled={resendLoading || countdown > 0}>
           {resendLoading ? <Spinner label="Resending" /> : countdown > 0 ? `Resend OTP in ${countdown}s` : "Resend OTP"}
         </button>
-        {message ? <p className="muted">{message}</p> : null}
+        {message ? <p className="muted status-msg">{message}</p> : null}
         <p className="muted">
           Back to <Link href="/login">Login</Link>
         </p>

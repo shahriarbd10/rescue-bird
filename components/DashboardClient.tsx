@@ -2,10 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import SculptureLoader from "@/components/SculptureLoader";
 import BrandLogo from "@/components/BrandLogo";
 import { BoltIcon, CompassIcon, ShieldIcon } from "@/components/BrandIcons";
 import Spinner from "@/components/Spinner";
+
+const LiveMap = dynamic(() => import("@/components/LiveMap"), {
+  ssr: false,
+  loading: () => <SculptureLoader lines={3} />
+});
 
 type User = {
   _id: string;
@@ -42,6 +49,30 @@ type Message = {
 
 type TabId = "overview" | "alerts" | "operations" | "messages" | "admin";
 
+type MapData = {
+  role: string;
+  users: Array<{
+    _id: string;
+    name: string;
+    role: string;
+    currentLocation?: { lat?: number | null; lng?: number | null } | null;
+    lastLocationAt?: string | null;
+  }>;
+  teams: Array<{
+    _id: string;
+    name: string;
+    location?: { lat?: number | null; lng?: number | null } | null;
+    coverageRadiusKm?: number;
+  }>;
+  alerts: Array<{
+    _id: string;
+    area: string;
+    status: "open" | "accepted" | "resolved";
+    location?: { lat?: number | null; lng?: number | null } | null;
+    createdAt: string;
+  }>;
+};
+
 export default function DashboardClient() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -62,6 +93,8 @@ export default function DashboardClient() {
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const [recordingVoice, setRecordingVoice] = useState(false);
   const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
+  const [mapData, setMapData] = useState<MapData | null>(null);
+  const [syncingLocation, setSyncingLocation] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const voiceChunksRef = useRef<BlobPart[]>([]);
@@ -83,10 +116,11 @@ export default function DashboardClient() {
   }, [user]);
 
   const loadBase = useCallback(async () => {
-    const [meRes, teamRes, alertRes] = await Promise.all([
+    const [meRes, teamRes, alertRes, mapRes] = await Promise.all([
       fetch("/api/auth/me"),
       fetch("/api/teams"),
-      fetch("/api/alerts")
+      fetch("/api/alerts"),
+      fetch("/api/map")
     ]);
 
     if (meRes.status === 401) {
@@ -97,10 +131,12 @@ export default function DashboardClient() {
     const meJson = await meRes.json();
     const teamJson = await teamRes.json();
     const alertJson = await alertRes.json();
+    const mapJson = mapRes.ok ? await mapRes.json() : null;
 
     setUser(meJson.user);
     setTeams(teamJson.teams || []);
     setAlerts(alertJson.alerts || []);
+    setMapData(mapJson);
 
     const teamId = meJson.user?.teamId || teamJson.teams?.[0]?._id || "";
     setSelectedTeamId((prev) => prev || teamId);
@@ -263,6 +299,40 @@ export default function DashboardClient() {
     );
   }
 
+  const syncCurrentLocation = useCallback(async (options?: PositionOptions) => {
+    if (!navigator.geolocation) {
+      setStatus("Geolocation is not supported on this device.");
+      return;
+    }
+    setSyncingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        await fetch("/api/map", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lat, lng })
+        });
+        setSyncingLocation(false);
+        await loadBase();
+        setStatus("Live location synced on map.");
+      },
+      () => {
+        setSyncingLocation(false);
+        setStatus("Unable to sync location. Please allow location access.");
+      },
+      options || { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [loadBase]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === "user" || user.role === "rescue_team" || user.role === "team_staff") {
+      void syncCurrentLocation({ enableHighAccuracy: false, timeout: 7000, maximumAge: 300000 });
+    }
+  }, [user, syncCurrentLocation]);
+
   async function teamCreateOrUpdate(formData: FormData) {
     setStatus("");
     const payload = {
@@ -408,7 +478,30 @@ export default function DashboardClient() {
             <p className="l">Current chat messages</p>
           </div>
         </div>
-        {status ? <span className="tag">{status}</span> : null}
+        <div className="section-image-grid">
+          <Image
+            className="section-image"
+            src="https://source.unsplash.com/900x600/?emergency,vehicle,response"
+            alt="Emergency vehicles in response operation"
+            width={900}
+            height={600}
+          />
+          <Image
+            className="section-image"
+            src="https://source.unsplash.com/900x600/?rescue,volunteers,teamwork"
+            alt="Rescue volunteers and team coordination"
+            width={900}
+            height={600}
+          />
+          <Image
+            className="section-image"
+            src="https://source.unsplash.com/900x600/?disaster,relief,operation"
+            alt="Disaster relief operation in progress"
+            width={900}
+            height={600}
+          />
+        </div>
+        {status ? <span className="tag status-msg">{status}</span> : null}
       </section>
 
       <section className="card">
@@ -423,6 +516,27 @@ export default function DashboardClient() {
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="card stack">
+        <div className="row space">
+          <h2 className="subhead">Live Location Map</h2>
+          <button className="secondary" onClick={() => syncCurrentLocation()} disabled={syncingLocation}>
+            {syncingLocation ? <Spinner label="Syncing" /> : "Refresh My Location"}
+          </button>
+        </div>
+        <p className="muted">
+          {isAdmin
+            ? "Admin view shows users, rescue teams, and alert locations."
+            : isTeamSide
+              ? "Team view shows your team coverage plus live assigned alerts."
+              : "User view shows your current location and your alert locations."}
+        </p>
+        {mapData ? (
+          <LiveMap role={mapData.role} users={mapData.users} teams={mapData.teams} alerts={mapData.alerts} />
+        ) : (
+          <SculptureLoader lines={3} />
+        )}
       </section>
 
       {activeTab === "overview" ? (
@@ -492,6 +606,14 @@ export default function DashboardClient() {
                 </div>
                 <button type="button" className="secondary" onClick={detectLocation} disabled={locating}>
                   {locating ? <Spinner label="Detecting location" /> : "Use My Location"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => syncCurrentLocation()}
+                  disabled={syncingLocation}
+                >
+                  {syncingLocation ? <Spinner label="Syncing location" /> : "Sync Live Location"}
                 </button>
                 <textarea
                   name="note"

@@ -5,7 +5,7 @@ import BrandLogo from "@/components/BrandLogo";
 
 export default function HomePage() {
   return (
-    <main className="page stack">
+    <main className="page stack motion-page">
       <section className="hero stack">
         <span className="tag hero-tag">
           <ShieldIcon size={14} />
@@ -30,14 +30,14 @@ export default function HomePage() {
         </div>
         <div className="hero-image-grid">
           <Image
-            src="https://images.unsplash.com/photo-1603398938378-e54eab446dde?auto=format&fit=crop&w=900&q=80"
-            alt="Emergency vehicle support"
+            src="https://source.unsplash.com/900x600/?rescue,team,emergency"
+            alt="Rescue response team in action"
             width={900}
             height={600}
           />
           <Image
-            src="https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&w=900&q=80"
-            alt="Rescue worker communication"
+            src="https://source.unsplash.com/900x600/?firefighter,disaster,response"
+            alt="Disaster response and field coordination"
             width={900}
             height={600}
           />
@@ -77,6 +77,29 @@ export default function HomePage() {
 
       <section className="card">
         <h2 className="subhead">How It Works</h2>
+        <div className="section-image-grid">
+          <Image
+            className="section-image"
+            src="https://source.unsplash.com/900x600/?flood,rescue,boat"
+            alt="Flood rescue operation"
+            width={900}
+            height={600}
+          />
+          <Image
+            className="section-image"
+            src="https://source.unsplash.com/900x600/?emergency,command,center"
+            alt="Emergency command and communication center"
+            width={900}
+            height={600}
+          />
+          <Image
+            className="section-image"
+            src="https://source.unsplash.com/900x600/?volunteer,rescue,operation"
+            alt="Volunteer rescue teams supporting emergency response"
+            width={900}
+            height={600}
+          />
+        </div>
         <div className="list">
           <div className="tile feature-tile">
             <span className="icon-pill">
