@@ -56,7 +56,7 @@ export default function LoginClient() {
         <p>Sign in to continue emergency operations, alerts, and team communication.</p>
         <Image
           className="auth-image"
-          src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80"
+          src="/images/rescue-command.svg"
           alt="Emergency communication and field coordination"
           width={1200}
           height={800}

@@ -30,13 +30,13 @@ export default function HomePage() {
         </div>
         <div className="hero-image-grid">
           <Image
-            src="https://images.unsplash.com/photo-1603398938378-e54eab446dde?auto=format&fit=crop&w=900&q=80"
+            src="/images/rescue-operations.svg"
             alt="Rescue response team in action"
             width={900}
             height={600}
           />
           <Image
-            src="https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&w=900&q=80"
+            src="/images/rescue-teamwork.svg"
             alt="Disaster response and field coordination"
             width={900}
             height={600}
@@ -80,21 +80,21 @@ export default function HomePage() {
         <div className="section-image-grid">
           <Image
             className="section-image"
-            src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=900&q=80"
+            src="/images/rescue-relief.svg"
             alt="Flood rescue operation"
             width={900}
             height={600}
           />
           <Image
             className="section-image"
-            src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80"
+            src="/images/rescue-command.svg"
             alt="Emergency command and communication center"
             width={900}
             height={600}
           />
           <Image
             className="section-image"
-            src="https://images.unsplash.com/photo-1492538368677-f6e0afe31dcc?auto=format&fit=crop&w=900&q=80"
+            src="/images/rescue-night.svg"
             alt="Volunteer rescue teams supporting emergency response"
             width={900}
             height={600}

@@ -65,7 +65,7 @@ export default function RegisterClient() {
         <p>Role-based onboarding for emergency users, teams, and staff under one trusted platform.</p>
         <Image
           className="auth-image"
-          src="https://images.unsplash.com/photo-1615461066159-fea0960485d5?auto=format&fit=crop&w=1200&q=80"
+          src="/images/rescue-teamwork.svg"
           alt="Rescue operations team preparing for emergency response"
           width={1200}
           height={800}

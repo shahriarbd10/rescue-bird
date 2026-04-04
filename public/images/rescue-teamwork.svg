@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Rescue Teamwork</title>
+  <desc id="desc">Rescue team coordination illustration</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f9a72"/>
+      <stop offset="100%" stop-color="#0b67c1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="110" y="140" width="980" height="520" rx="36" fill="#ffffff1f" stroke="#ffffff55"/>
+  <circle cx="320" cy="350" r="90" fill="#ffffff55"/>
+  <rect x="430" y="290" width="500" height="120" rx="24" fill="#ffffff33"/>
+  <rect x="460" y="325" width="220" height="22" rx="11" fill="#ffffffcc"/>
+  <rect x="460" y="360" width="420" height="18" rx="9" fill="#ffffff99"/>
+  <circle cx="320" cy="490" r="90" fill="#ffffff45"/>
+  <rect x="430" y="440" width="500" height="120" rx="24" fill="#ffffff28"/>
+  <rect x="460" y="475" width="220" height="22" rx="11" fill="#ffffffcc"/>
+  <rect x="460" y="510" width="420" height="18" rx="9" fill="#ffffff99"/>
+</svg>

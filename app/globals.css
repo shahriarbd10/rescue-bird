@@ -15,6 +15,11 @@
   --shadow-soft: 0 10px 26px rgba(19, 66, 112, 0.08);
   --radius-lg: 20px;
   --radius-md: 14px;
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 20px;
+  --space-5: 24px;
 }
 
 * {
@@ -75,7 +80,7 @@ a {
 .page {
   width: min(1200px, 100%);
   margin: 0 auto;
-  padding: 16px 16px 48px;
+  padding: var(--space-4) var(--space-3) 56px;
 }
 
 .motion-page {
@@ -84,18 +89,18 @@ a {
 
 .grid {
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .row {
   display: flex;
-  gap: 10px;
+  gap: var(--space-2);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -131,7 +136,7 @@ a {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
-  padding: 14px;
+  padding: clamp(14px, 2vw, 22px);
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.2s ease;
 }
 
@@ -141,7 +146,7 @@ a {
 }
 
 .hero {
-  padding: 18px;
+  padding: clamp(16px, 2vw, 26px);
   border-radius: 24px;
   background:
     radial-gradient(280px 180px at 15% 0%, rgba(255, 255, 255, 0.2), transparent 70%),
@@ -156,10 +161,10 @@ a {
 }
 
 .hero-image-grid {
-  margin-top: 8px;
+  margin-top: var(--space-1);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .hero-image-grid img {
@@ -173,8 +178,8 @@ a {
 .section-image-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
-  margin: 8px 0 2px;
+  gap: var(--space-1);
+  margin: var(--space-1) 0 2px;
 }
 
 .section-image {
@@ -189,14 +194,14 @@ a {
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .kpi {
   background: #fff;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  padding: 10px;
+  padding: var(--space-2);
   box-shadow: var(--shadow-soft);
 }
 
@@ -232,7 +237,7 @@ a {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  padding: 5px 9px;
+  padding: 6px 10px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -267,7 +272,7 @@ a {
 
 .auth-wrap {
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .auth-wrap > section {
@@ -283,13 +288,13 @@ a {
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow);
-  padding: 16px;
+  padding: clamp(16px, 2vw, 24px);
 }
 
 .auth-brand {
   border-radius: var(--radius-lg);
   color: #fff;
-  padding: 18px;
+  padding: clamp(16px, 2vw, 24px);
   background:
     radial-gradient(260px 190px at 12% 0%, rgba(255, 255, 255, 0.26), transparent 70%),
     radial-gradient(280px 210px at 92% 100%, rgba(255, 255, 255, 0.14), transparent 68%),
@@ -307,7 +312,7 @@ a {
 
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: var(--space-1);
   overflow-x: auto;
   padding-bottom: 2px;
 }
@@ -317,7 +322,7 @@ a {
   background: #f5faff;
   color: #24527f;
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 8px 14px;
   font-weight: 700;
   white-space: nowrap;
   transition: all 0.2s ease;
@@ -340,7 +345,7 @@ input,
 textarea,
 select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 12px;
   border-radius: 12px;
   border: 1px solid #bfd4ea;
   background: #fff;
@@ -365,7 +370,7 @@ textarea {
 button {
   border: none;
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 10px 15px;
   background: var(--brand);
   color: #fff;
   font-weight: 700;
@@ -400,17 +405,17 @@ button.danger {
 .btn-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .tile {
-  padding: 12px;
+  padding: clamp(12px, 1.6vw, 18px);
   border-radius: var(--radius-md);
   background: #fff;
   border: 1px solid var(--line);
@@ -425,7 +430,7 @@ button.danger {
 
 .feature-tile {
   display: grid;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .icon-pill {
@@ -454,7 +459,7 @@ button.danger {
 }
 
 .field-with-icon input {
-  padding-left: 38px;
+  padding-left: 40px;
 }
 
 .field-icon {
@@ -469,7 +474,7 @@ button.danger {
 .spinner-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .spinner {
@@ -491,9 +496,9 @@ button.danger {
   border-radius: 16px;
   border: 1px solid var(--line);
   box-shadow: var(--shadow-soft);
-  padding: 14px;
+  padding: clamp(14px, 1.8vw, 20px);
   display: grid;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .skeleton {
@@ -532,12 +537,12 @@ button.danger {
   border: 1px solid #d2e4f8;
   background: #f8fbff;
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 12px 14px;
   animation: rise-in 0.35s ease both;
 }
 
 .rescue-shell {
-  gap: 14px;
+  gap: var(--space-3);
 }
 
 .dashboard-root .card {
@@ -550,12 +555,12 @@ button.danger {
 
 .ops-grid {
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .chat-layout {
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .chat-layout > h2 {
@@ -577,9 +582,9 @@ button.danger {
 .map-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--space-2);
   align-items: center;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-top: 1px solid var(--line);
   background: #f8fbff;
 }
@@ -609,6 +614,14 @@ button.danger {
 
 .dot.alert {
   background: #ce3a42;
+}
+
+.dot.squad-near {
+  background: #20c592;
+}
+
+.dot.squad-far {
+  background: #f0b33c;
 }
 
 .rescue-hero {
@@ -672,7 +685,7 @@ button.danger {
 
 @media (min-width: 860px) {
   .page {
-    padding-top: 28px;
+    padding-top: 32px;
     padding-bottom: 64px;
   }
 
@@ -702,11 +715,11 @@ button.danger {
   }
 
   .card {
-    padding: 18px;
+    padding: clamp(18px, 1.8vw, 26px);
   }
 
   .rescue-shell {
-    gap: 16px;
+    gap: var(--space-4);
   }
 
   .ops-grid {
@@ -722,7 +735,7 @@ button.danger {
 
 @media (max-width: 520px) {
   .page {
-    padding-inline: 12px;
+    padding-inline: var(--space-2);
     padding-bottom: 30px;
   }
 

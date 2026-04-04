@@ -63,6 +63,8 @@ type MapData = {
     name: string;
     location?: { lat?: number | null; lng?: number | null } | null;
     coverageRadiusKm?: number;
+    phone?: string;
+    areaNames?: string[];
   }>;
   alerts: Array<{
     _id: string;
@@ -487,21 +489,21 @@ export default function DashboardClient() {
         <div className="section-image-grid">
           <Image
             className="section-image"
-            src="https://images.unsplash.com/photo-1469571486292-b53601020a5f?auto=format&fit=crop&w=900&q=80"
+            src="/images/rescue-operations.svg"
             alt="Emergency vehicles in response operation"
             width={900}
             height={600}
           />
           <Image
             className="section-image"
-            src="https://images.unsplash.com/photo-1474631245212-32dc3c8310c6?auto=format&fit=crop&w=900&q=80"
+            src="/images/rescue-teamwork.svg"
             alt="Rescue volunteers and team coordination"
             width={900}
             height={600}
           />
           <Image
             className="section-image"
-            src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=900&q=80"
+            src="/images/rescue-relief.svg"
             alt="Disaster relief operation in progress"
             width={900}
             height={600}

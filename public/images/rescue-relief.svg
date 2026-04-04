@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Rescue Relief</title>
+  <desc id="desc">Relief distribution and emergency support illustration</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ce3a42"/>
+      <stop offset="100%" stop-color="#f0a310"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <circle cx="200" cy="150" r="130" fill="#ffffff20"/>
+  <rect x="120" y="210" width="960" height="480" rx="34" fill="#ffffff1c" stroke="#ffffff4a"/>
+  <rect x="190" y="290" width="230" height="170" rx="16" fill="#ffffff45"/>
+  <rect x="250" y="340" width="110" height="22" rx="11" fill="#ffffffdd"/>
+  <rect x="190" y="500" width="230" height="110" rx="16" fill="#ffffff35"/>
+  <rect x="250" y="545" width="110" height="18" rx="9" fill="#ffffffcc"/>
+  <rect x="485" y="290" width="520" height="320" rx="22" fill="#ffffff2a"/>
+  <path d="M540 520h390M540 470h390M540 420h390M540 370h390" stroke="#ffffffaa" stroke-width="14" stroke-linecap="round"/>
+  <rect x="540" y="330" width="190" height="24" rx="12" fill="#ffffffd0"/>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Rescue Command</title>
+  <desc id="desc">Emergency command center dashboard illustration</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#203a59"/>
+      <stop offset="100%" stop-color="#0b67c1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="90" y="110" width="1020" height="580" rx="34" fill="#ffffff1c" stroke="#ffffff44"/>
+  <rect x="140" y="170" width="460" height="460" rx="22" fill="#ffffff22"/>
+  <circle cx="370" cy="400" r="150" fill="none" stroke="#ffffffbb" stroke-width="10"/>
+  <path d="M370 250 315 430l85-45 58-145z" fill="#ffffffcc"/>
+  <rect x="640" y="170" width="410" height="140" rx="20" fill="#ffffff28"/>
+  <rect x="675" y="215" width="170" height="22" rx="11" fill="#ffffffcc"/>
+  <rect x="675" y="250" width="320" height="16" rx="8" fill="#ffffff99"/>
+  <rect x="640" y="335" width="410" height="140" rx="20" fill="#ffffff24"/>
+  <rect x="675" y="380" width="170" height="22" rx="11" fill="#ffffffcc"/>
+  <rect x="675" y="415" width="320" height="16" rx="8" fill="#ffffff99"/>
+  <rect x="640" y="500" width="410" height="130" rx="20" fill="#ffffff1f"/>
+  <rect x="675" y="540" width="290" height="16" rx="8" fill="#ffffff99"/>
+  <rect x="675" y="568" width="250" height="16" rx="8" fill="#ffffff99"/>
+</svg>

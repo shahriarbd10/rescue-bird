@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         "location.lat": { $ne: null },
         "location.lng": { $ne: null }
       })
-        .select("name location coverageRadiusKm")
+        .select("name location coverageRadiusKm phone areaNames")
         .lean(),
       AlertModel.find({
         "location.lat": { $ne: null },
@@ -43,15 +43,24 @@ export async function GET(req: NextRequest) {
   }
 
   if (actor.role === "user") {
-    const alerts = await AlertModel.find({
-      userId: actor._id,
-      "location.lat": { $ne: null },
-      "location.lng": { $ne: null }
-    })
-      .select("area status location createdAt assignedTeamId")
-      .sort({ createdAt: -1 })
-      .limit(80)
-      .lean();
+    const [alerts, teams] = await Promise.all([
+      AlertModel.find({
+        userId: actor._id,
+        "location.lat": { $ne: null },
+        "location.lng": { $ne: null }
+      })
+        .select("area status location createdAt assignedTeamId")
+        .sort({ createdAt: -1 })
+        .limit(80)
+        .lean(),
+      RescueTeamModel.find({
+        "location.lat": { $ne: null },
+        "location.lng": { $ne: null }
+      })
+        .select("name location coverageRadiusKm phone areaNames")
+        .sort({ createdAt: -1 })
+        .lean()
+    ]);
 
     return NextResponse.json({
       role: actor.role,
@@ -64,7 +73,7 @@ export async function GET(req: NextRequest) {
           lastLocationAt: actor.lastLocationAt || null
         }
       ],
-      teams: [],
+      teams,
       alerts
     });
   }
@@ -80,7 +89,7 @@ export async function GET(req: NextRequest) {
   }
 
   const [team, alerts] = await Promise.all([
-    RescueTeamModel.findById(teamId).select("name location coverageRadiusKm").lean(),
+    RescueTeamModel.findById(teamId).select("name location coverageRadiusKm phone areaNames").lean(),
     AlertModel.find({
       assignedTeamId: teamId,
       status: { $in: ["open", "accepted"] },

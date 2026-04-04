@@ -80,7 +80,7 @@ export default function VerifyOtpClient({ initialEmail = "" }: Props) {
         <p>Enter the six-digit OTP from your email to complete account activation.</p>
         <Image
           className="auth-image"
-          src="https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=80"
+          src="/images/rescue-night.svg"
           alt="Rescue response and emergency deployment"
           width={1200}
           height={800}

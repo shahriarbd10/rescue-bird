@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Rescue Operations</title>
+  <desc id="desc">Emergency operation scene with command lines and response units</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b67c1"/>
+      <stop offset="100%" stop-color="#0797cb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <circle cx="1020" cy="130" r="180" fill="#ffffff22"/>
+  <circle cx="180" cy="680" r="220" fill="#ffffff18"/>
+  <rect x="130" y="180" width="430" height="260" rx="28" fill="#ffffff22" stroke="#ffffff55"/>
+  <rect x="170" y="230" width="180" height="26" rx="13" fill="#ffffffbb"/>
+  <rect x="170" y="275" width="330" height="18" rx="9" fill="#ffffff88"/>
+  <rect x="170" y="305" width="290" height="18" rx="9" fill="#ffffff88"/>
+  <rect x="170" y="335" width="250" height="18" rx="9" fill="#ffffff88"/>
+  <rect x="640" y="210" width="420" height="360" rx="30" fill="#ffffff1a" stroke="#ffffff55"/>
+  <path d="M700 460 780 390 855 430 930 330 1000 370" fill="none" stroke="#ffffffcc" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="700" cy="460" r="12" fill="#ffffff"/>
+  <circle cx="780" cy="390" r="12" fill="#ffffff"/>
+  <circle cx="855" cy="430" r="12" fill="#ffffff"/>
+  <circle cx="930" cy="330" r="12" fill="#ffffff"/>
+  <circle cx="1000" cy="370" r="12" fill="#ffffff"/>
+</svg>
