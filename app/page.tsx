@@ -30,13 +30,13 @@ export default function HomePage() {
         </div>
         <div className="hero-image-grid">
           <Image
-            src="https://source.unsplash.com/900x600/?rescue,team,emergency"
+            src="https://images.unsplash.com/photo-1603398938378-e54eab446dde?auto=format&fit=crop&w=900&q=80"
             alt="Rescue response team in action"
             width={900}
             height={600}
           />
           <Image
-            src="https://source.unsplash.com/900x600/?firefighter,disaster,response"
+            src="https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&w=900&q=80"
             alt="Disaster response and field coordination"
             width={900}
             height={600}
@@ -80,21 +80,21 @@ export default function HomePage() {
         <div className="section-image-grid">
           <Image
             className="section-image"
-            src="https://source.unsplash.com/900x600/?flood,rescue,boat"
+            src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=900&q=80"
             alt="Flood rescue operation"
             width={900}
             height={600}
           />
           <Image
             className="section-image"
-            src="https://source.unsplash.com/900x600/?emergency,command,center"
+            src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80"
             alt="Emergency command and communication center"
             width={900}
             height={600}
           />
           <Image
             className="section-image"
-            src="https://source.unsplash.com/900x600/?volunteer,rescue,operation"
+            src="https://images.unsplash.com/photo-1492538368677-f6e0afe31dcc?auto=format&fit=crop&w=900&q=80"
             alt="Volunteer rescue teams supporting emergency response"
             width={900}
             height={600}

@@ -95,6 +95,7 @@ export default function DashboardClient() {
   const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [syncingLocation, setSyncingLocation] = useState(false);
+  const autoSyncedUserRef = useRef<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const voiceChunksRef = useRef<BlobPart[]>([]);
@@ -328,9 +329,14 @@ export default function DashboardClient() {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role === "user" || user.role === "rescue_team" || user.role === "team_staff") {
-      void syncCurrentLocation({ enableHighAccuracy: false, timeout: 7000, maximumAge: 300000 });
-    }
+    const shouldAutoSync = user.role === "user" || user.role === "rescue_team" || user.role === "team_staff";
+    if (!shouldAutoSync) return;
+
+    const userId = String(user._id);
+    if (autoSyncedUserRef.current === userId) return;
+    autoSyncedUserRef.current = userId;
+
+    void syncCurrentLocation({ enableHighAccuracy: false, timeout: 7000, maximumAge: 300000 });
   }, [user, syncCurrentLocation]);
 
   async function teamCreateOrUpdate(formData: FormData) {
@@ -481,21 +487,21 @@ export default function DashboardClient() {
         <div className="section-image-grid">
           <Image
             className="section-image"
-            src="https://source.unsplash.com/900x600/?emergency,vehicle,response"
+            src="https://images.unsplash.com/photo-1469571486292-b53601020a5f?auto=format&fit=crop&w=900&q=80"
             alt="Emergency vehicles in response operation"
             width={900}
             height={600}
           />
           <Image
             className="section-image"
-            src="https://source.unsplash.com/900x600/?rescue,volunteers,teamwork"
+            src="https://images.unsplash.com/photo-1474631245212-32dc3c8310c6?auto=format&fit=crop&w=900&q=80"
             alt="Rescue volunteers and team coordination"
             width={900}
             height={600}
           />
           <Image
             className="section-image"
-            src="https://source.unsplash.com/900x600/?disaster,relief,operation"
+            src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=900&q=80"
             alt="Disaster relief operation in progress"
             width={900}
             height={600}
