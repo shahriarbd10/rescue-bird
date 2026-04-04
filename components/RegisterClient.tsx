@@ -1,17 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
-import { KeyIcon, MailIcon, ShieldIcon, UsersIcon } from "@/components/BrandIcons";
+import { BoltIcon, HomeIcon, KeyIcon, MailIcon, ShieldIcon, UsersIcon } from "@/components/BrandIcons";
 import BrandLogo from "@/components/BrandLogo";
 import Spinner from "@/components/Spinner";
 
 const roles = [
-  { value: "user", label: "User" },
-  { value: "rescue_team", label: "Rescue Team" },
-  { value: "team_staff", label: "Team Staff" },
-  { value: "admin", label: "Admin" }
+  { value: "user", label: "Citizen / User" },
+  { value: "rescue_team", label: "Rescue Team Leader" },
+  { value: "team_staff", label: "Support Staff" },
+  { value: "admin", label: "Command Admin" }
 ];
 
 export default function RegisterClient() {
@@ -23,7 +22,7 @@ export default function RegisterClient() {
     const password = String(formData.get("password") || "");
     const confirmPassword = String(formData.get("confirmPassword") || "");
     if (password !== confirmPassword) {
-      setMessage("Password and confirm password do not match.");
+      setMessage("Security keys do not match.");
       return;
     }
 
@@ -42,102 +41,117 @@ export default function RegisterClient() {
     setLoading(false);
 
     if (!res.ok) {
-      setMessage(json.error || "Registration failed");
+      setMessage(json.error || "Onboarding failed");
       return;
     }
 
     setEmailForOtp(json.email);
-    setMessage("Account created. OTP sent to your email.");
+    setMessage("Account initialized. Tactical OTP transmitted.");
   }
 
   return (
-    <div className="auth-wrap auth-mobile-shell">
-      <section className="auth-brand stack auth-brand-lite">
-        <span className="tag hero-tag">
-          <ShieldIcon size={14} />
-          Rescue Bird
-        </span>
-        <div className="row">
-          <BrandLogo />
-          <strong>Rescue Bird Identity</strong>
+    <div className="tactical-dark bg-secure min-h-screen stack center" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
+      <Link href="/" style={{ position: "absolute", top: "24px", left: "24px", display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "var(--muted)", fontWeight: 700, fontSize: "0.9rem" }}>
+         <div className="icon-pill" style={{ width: "32px", height: "32px", background: "var(--panel-soft)" }}>
+            <HomeIcon size={16} color="var(--brand)" />
+         </div>
+         Back to Home
+      </Link>
+      <section className="glass-panel stack" style={{ width: "min(500px, 100%)", padding: "40px", borderRadius: "32px", gap: "24px" }}>
+        <div className="stack center" style={{ textAlign: "center", gap: "10px" }}>
+          <BrandLogo size={40} color="#3b82f6" />
+          <h1 className="title" style={{ fontSize: "1.8rem" }}>Create Your Account</h1>
+          <p className="muted" style={{ fontSize: "0.9rem" }}>Sign up to get started with the Rescue Bird community.</p>
         </div>
-        <h1 className="title">Create account</h1>
-        <p>Role-based onboarding for emergency users, teams, and staff under one trusted platform.</p>
-        <Image
-          className="auth-image"
-          src="/images/rescue-teamwork.svg"
-          alt="Rescue operations team preparing for emergency response"
-          width={1200}
-          height={800}
-        />
-        <div className="list">
-          <div className="tile feature-tile">
-            <span className="icon-pill soft">
-              <MailIcon />
-            </span>
-            <strong>OTP-secured signup</strong>
-            <p className="muted">All accounts are verified by email before login is enabled.</p>
-          </div>
-          <div className="tile feature-tile">
-            <span className="icon-pill soft">
-              <UsersIcon />
-            </span>
-            <strong>Team-aware role model</strong>
-            <p className="muted">Team staff can be linked with team ID for operational coordination.</p>
-          </div>
-        </div>
-      </section>
 
-      <section className="auth-panel stack auth-panel-lite">
-        <h2 className="subhead">Registration</h2>
         <form
           className="grid"
+          style={{ gap: "16px" }}
           action={async (fd) => {
             await onSubmit(fd);
           }}
         >
-          <input name="name" placeholder="Full name" required />
+          <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+             <input 
+               name="name" 
+               placeholder="Full Name" 
+               required 
+             />
+             <input 
+               name="phone" 
+               placeholder="Comms (Phone)" 
+             />
+          </div>
+
           <label className="field-with-icon">
-            <span className="field-icon">
-              <MailIcon size={16} />
-            </span>
-            <input name="email" type="email" placeholder="Email address" required />
+            <span className="field-icon"><MailIcon size={16} color="#3b82f6" /></span>
+            <input 
+              name="email" 
+              type="email" 
+              placeholder="Email Address" 
+              required 
+              style={{ paddingLeft: "44px" }} 
+            />
           </label>
-          <input name="phone" placeholder="Phone number (optional)" />
-          <label className="field-with-icon">
-            <span className="field-icon">
-              <KeyIcon size={16} />
-            </span>
-            <input name="password" type="password" placeholder="Password" required />
-          </label>
-          <label className="field-with-icon">
-            <span className="field-icon">
-              <KeyIcon size={16} />
-            </span>
-            <input name="confirmPassword" type="password" placeholder="Confirm password" required />
-          </label>
-          <select name="role" defaultValue="user">
-            {roles.map((role) => (
-              <option key={role.value} value={role.value}>
-                {role.label}
-              </option>
-            ))}
-          </select>
-          <input name="teamId" placeholder="Team ID (only for team staff)" />
-          <button type="submit" disabled={loading}>
-            {loading ? <Spinner label="Creating account" /> : "Create Account"}
+
+          <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <label className="field-with-icon">
+              <span className="field-icon"><KeyIcon size={16} color="#3b82f6" /></span>
+              <input 
+                name="password" 
+                type="password" 
+                placeholder="Password" 
+                required 
+                style={{ paddingLeft: "44px" }} 
+              />
+            </label>
+            <label className="field-with-icon">
+              <span className="field-icon"><KeyIcon size={16} color="#3b82f6" /></span>
+              <input 
+                name="confirmPassword" 
+                type="password" 
+                placeholder="Confirm Password" 
+                required 
+                style={{ paddingLeft: "44px" }} 
+              />
+            </label>
+          </div>
+
+          <div className="stack" style={{ gap: "6px" }}>
+            <label className="muted" style={{ fontSize: "0.7rem", fontWeight: 800, textTransform: "uppercase" }}>Your Role</label>
+            <select name="role" defaultValue="user">
+              {roles.map((role) => (
+                <option key={role.value} value={role.value}>
+                  {role.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <input 
+            name="teamId" 
+            placeholder="Assigned Team ID (Staff Only)" 
+          />
+
+          <button type="submit" className="brand" disabled={loading} style={{ padding: "16px", borderRadius: "16px", marginTop: "8px" }}>
+            {loading ? <Spinner label="Setting up account" /> : "Create Account"}
           </button>
         </form>
 
-        {message ? <p className="muted status-msg">{message}</p> : null}
+        {message ? (
+          <div className={`tag ${message.includes('Security') ? 'danger' : 'success'}`} style={{ width: "100%", justifyContent: "center", padding: "12px" }}>
+            {message}
+          </div>
+        ) : null}
+
         {emailForOtp ? (
-          <Link href={`/verify?email=${encodeURIComponent(emailForOtp)}`}>
-            <button className="secondary">Verify OTP</button>
+          <Link href={`/verify?email=${encodeURIComponent(emailForOtp)}`} style={{ width: "100%" }}>
+            <button className="secondary" style={{ width: "100%", border: "1px solid #3b82f6", color: "#3b82f6" }}>Enter Transmission (Verify OTP)</button>
           </Link>
         ) : null}
 
-        <p className="muted">
-          Already registered? <Link href="/login">Login</Link>
+        <p className="muted" style={{ textAlign: "center", fontSize: "0.9rem", borderTop: "1px solid var(--line)", paddingTop: "20px" }}>
+          Already have an account? <Link href="/login" style={{ color: "var(--brand)", fontWeight: 700 }}>Log In</Link>
         </p>
       </section>
     </div>

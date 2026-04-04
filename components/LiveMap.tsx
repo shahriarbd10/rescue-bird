@@ -203,7 +203,7 @@ export default function LiveMap({ role, users, teams, alerts }: Props) {
         top: "100px", 
         right: "16px", 
         zIndex: 1000, 
-        background: "rgba(255,255,255,0.9)", 
+        background: "var(--glass)", 
         backdropFilter: "blur(10px)",
         padding: "12px",
         borderRadius: "16px",
@@ -211,7 +211,8 @@ export default function LiveMap({ role, users, teams, alerts }: Props) {
         display: "flex",
         flexDirection: "column",
         gap: "8px",
-        border: "1px solid rgba(255,255,255,0.5)"
+        border: "1px solid var(--line)",
+        color: "var(--text)"
       }}>
         <div className="row" style={{ gap: "8px", fontSize: "0.75rem", fontWeight: 700 }}>
           <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb", border: "2px solid #fff", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} /> User Assets

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { BoltIcon, KeyIcon, MailIcon, ShieldIcon } from "@/components/BrandIcons";
+import { BoltIcon, HomeIcon, KeyIcon, MailIcon, ShieldIcon } from "@/components/BrandIcons";
 import BrandLogo from "@/components/BrandLogo";
 import Spinner from "@/components/Spinner";
 
@@ -44,67 +44,81 @@ export default function LoginClient() {
   }
 
   return (
-    <div className="auth-wrap auth-mobile-shell">
-      <section className="auth-brand stack auth-brand-lite">
-        <span className="tag hero-tag">
-          <ShieldIcon size={14} />
-          Secure Access
-        </span>
-        <div className="row">
-          <BrandLogo />
-          <strong>Rescue Bird Login</strong>
+    <div className="tactical-dark bg-secure min-h-screen stack center" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
+      <Link href="/" style={{ position: "absolute", top: "24px", left: "24px", display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "var(--muted)", fontWeight: 700, fontSize: "0.9rem" }}>
+         <div className="icon-pill" style={{ width: "32px", height: "32px", background: "var(--panel-soft)" }}>
+            <HomeIcon size={16} color="var(--brand)" />
+         </div>
+         Back to Home
+      </Link>
+      <section className="glass-panel stack" style={{ width: "min(440px, 100%)", padding: "40px", borderRadius: "32px", gap: "24px" }}>
+        <div className="stack center" style={{ textAlign: "center", gap: "12px" }}>
+          <BrandLogo size={48} color="#3b82f6" />
+          <span className="tag" style={{ background: "rgba(37, 99, 235, 0.1)", color: "var(--brand)" }}>
+            Rescue Bird Portal
+          </span>
+          <h1 className="title" style={{ fontSize: "2rem" }}>Welcome Back</h1>
+          <p className="muted" style={{ fontSize: "0.95rem" }}>Please log in to your account to continue.</p>
         </div>
-        <h1 className="title">Welcome back</h1>
-        <p>Sign in to continue emergency operations, alerts, and team communication.</p>
-        <Image
-          className="auth-image"
-          src="/images/rescue-command.svg"
-          alt="Emergency communication and field coordination"
-          width={1200}
-          height={800}
-        />
-        <div className="list">
-          <div className="tile feature-tile">
-            <span className="icon-pill soft">
-              <BoltIcon />
-            </span>
-            <strong>Fast mobile sessions</strong>
-            <p className="muted">Optimized for webview login and one-hand navigation in the field.</p>
-          </div>
-          <div className="tile feature-tile">
-            <span className="icon-pill soft">
-              <ShieldIcon />
-            </span>
-            <strong>Role-aware dashboard</strong>
-            <p className="muted">Each account sees only the controls and data they need.</p>
-          </div>
-        </div>
-      </section>
 
-      <section className="auth-panel stack auth-panel-lite">
-        <h2 className="subhead">Login</h2>
-        <form className="grid" onSubmit={onSubmit}>
-          <label className="field-with-icon">
-            <span className="field-icon">
-              <MailIcon size={16} />
-            </span>
-            <input name="email" type="email" placeholder="Email address" required />
-          </label>
-          <label className="field-with-icon">
-            <span className="field-icon">
-              <KeyIcon size={16} />
-            </span>
-            <input name="password" type="password" placeholder="Password" required />
-          </label>
-          <button type="submit" disabled={loading} aria-busy={loading}>
-            {loading ? <Spinner label="Signing in" /> : "Login"}
+        <form className="grid" style={{ gap: "20px" }} onSubmit={onSubmit}>
+          <div className="stack" style={{ gap: "8px" }}>
+            <label className="muted" style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em" }}>Email Address</label>
+            <label className="field-with-icon">
+              <span className="field-icon">
+                <MailIcon size={18} color="#3b82f6" />
+              </span>
+              <input 
+                name="email" 
+                type="email" 
+                placeholder="your@email.com" 
+                required 
+                style={{ paddingLeft: "44px" }}
+              />
+            </label>
+          </div>
+
+          <div className="stack" style={{ gap: "8px" }}>
+            <label className="muted" style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em" }}>Password</label>
+            <label className="field-with-icon">
+              <span className="field-icon">
+                <KeyIcon size={18} color="#3b82f6" />
+              </span>
+              <input 
+                name="password" 
+                type="password" 
+                placeholder="••••••••" 
+                required 
+                style={{ paddingLeft: "44px" }}
+              />
+            </label>
+          </div>
+
+          <button type="submit" className="brand" disabled={loading} style={{ padding: "16px", borderRadius: "16px", fontSize: "1rem", marginTop: "12px" }}>
+            {loading ? <Spinner label="Logging in" /> : "Log In"}
           </button>
         </form>
-        {message ? <p className="muted status-msg">{message}</p> : null}
-        <p className="muted">
-          New user? <Link href="/register">Create account</Link>
-        </p>
+
+        {message ? (
+          <div className="tag danger" style={{ width: "100%", justifyContent: "center", padding: "12px" }}>
+            {message}
+          </div>
+        ) : null}
+
+        <div className="row center" style={{ marginTop: "12px", borderTop: "1px solid var(--line)", paddingTop: "24px" }}>
+          <p className="muted" style={{ fontSize: "0.9rem" }}>
+            New to Rescue Bird? <Link href="/register" style={{ color: "var(--brand)", fontWeight: 700 }}>Create Account</Link>
+          </p>
+        </div>
       </section>
+      
+      <div className="desktop-only" style={{ position: "fixed", bottom: "24px", right: "24px" }}>
+         <div className="row" style={{ gap: "12px" }}>
+            <ShieldIcon color="rgba(255,255,255,0.2)" />
+            <BoltIcon color="rgba(255,255,255,0.2)" />
+            <BrandLogo size={24} color="rgba(255,255,255,0.1)" />
+         </div>
+      </div>
     </div>
   );
 }

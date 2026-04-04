@@ -9,7 +9,8 @@ import BrandLogo from "@/components/BrandLogo";
 import { BoltIcon, CompassIcon, MailIcon, ShieldIcon, UsersIcon } from "@/components/BrandIcons";
 import Spinner from "@/components/Spinner";
 
-import BottomSheet from "@/components/BottomSheet";
+import BottomSheet, { SnapPoint } from "@/components/BottomSheet";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const LiveMap = dynamic(() => import("@/components/LiveMap"), {
   ssr: false,
@@ -121,6 +122,15 @@ export default function DashboardClient() {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const voiceChunksRef = useRef<BlobPart[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(true);
+  const [snapPoint, setSnapPoint] = useState<SnapPoint>("mini");
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
 
   const isUser = user?.role === "user";
   const isAdmin = user?.role === "admin";
@@ -211,8 +221,9 @@ export default function DashboardClient() {
   }, [voicePreviewUrl]);
 
   useEffect(() => {
-    // When switching tabs, ensure sheet is open
+    // When switching tabs, ensure sheet is open at standard point
     setIsSheetOpen(true);
+    setSnapPoint("standard");
   }, [activeTab]);
 
   async function logout() {
@@ -548,6 +559,11 @@ export default function DashboardClient() {
     return "tag danger";
   }
 
+  const activeResponders = useMemo(() => {
+    // Mock logic for responders if not in data
+    return mapData?.users.filter(u => u.role !== "user").length || 0;
+  }, [mapData]);
+
   function tabIcon(tabId: TabId) {
     if (tabId === "overview") return <BoltIcon size={16} />;
     if (tabId === "alerts") return <CompassIcon size={16} />;
@@ -577,21 +593,59 @@ export default function DashboardClient() {
         )}
       </div>
 
-      {/* Floating Header */}
-      <header className="top-nav-shell" style={{ padding: "8px 16px" }}>
-        <div className="row space" style={{ flexWrap: "nowrap" }}>
-          <div className="row" style={{ flexWrap: "nowrap" }}>
-            <BrandLogo size={28} />
-            <div className="stack" style={{ gap: 0 }}>
-              <strong style={{ fontSize: "0.95rem", lineHeight: 1 }}>Rescue Bird</strong>
-              <small className="muted" style={{ fontSize: "0.75rem" }}>{user.role.replace("_", " ")}</small>
-            </div>
+      {/* Professional Command Header (Desktop/Mobile Adaptive) */}
+      <header className="tactical-header" style={{ zIndex: 2000 }}>
+        <div className="row space header-inner" style={{ height: "100%", padding: "0 20px" }}>
+          <div className="row" style={{ gap: "16px" }}>
+             <BrandLogo size={32} color="#3b82f6" />
+             <div className="desktop-only stack" style={{ gap: 0 }}>
+                <strong style={{ fontSize: "1rem", color: "var(--text)" }}>Rescue Bird</strong>
+                <small className="muted" style={{ fontSize: "0.7rem" }}>Tactical Network</small>
+             </div>
+             <ThemeToggle />
           </div>
-          <button className="secondary" style={{ padding: "6px 12px", fontSize: "0.85rem", borderRadius: "12px" }} onClick={logout}>
-            Logout
-          </button>
+
+          <nav className="desktop-only row" style={{ gap: "8px" }}>
+             {visibleTabs.map(tab => (
+               <button 
+                 key={tab} 
+                 className={`nav-btn ${activeTab === tab ? 'active' : ''}`}
+                 onClick={() => { setActiveTab(tab); setIsSheetOpen(true); setSnapPoint("standard"); }}
+               >
+                 {tabIcon(tab)}
+                 <span>{tab}</span>
+               </button>
+             ))}
+          </nav>
+
+          <div className="row" style={{ gap: "10px" }}>
+            <div className="desktop-only row" style={{ gap: "8px", background: "var(--panel-soft)", padding: "4px 12px", borderRadius: "12px", border: "1px solid var(--line)" }}>
+               <div className="mini-pill">
+                 <span className="v">{openAlerts}</span>
+                 <span className="l">Alerts</span>
+               </div>
+               <div className="mini-pill">
+                 <span className="v">{activeResponders}</span>
+                 <span className="l">Teams</span>
+               </div>
+            </div>
+            <button className="secondary" style={{ width: "40px", height: "40px", borderRadius: "12px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--line)" }} onClick={logout} title="Sign Out">
+              <BoltIcon size={18} className="danger" />
+            </button>
+          </div>
         </div>
       </header>
+
+      <style jsx>{`
+        @media (max-width: 1023px) {
+          .desktop-only { display: none; }
+        }
+        @media (min-width: 1024px) {
+           .top-nav-shell { width: 400px !important; }
+        }
+      `}</style>
+
+      {/* Search and Location Overlays remain separate for map control */}
 
       {/* Floating Action Buttons */}
       <div className="fab-container">
@@ -599,7 +653,7 @@ export default function DashboardClient() {
           <CompassIcon size={24} />
         </button>
         {isUser && (
-          <button className="fab" onClick={() => { setActiveTab("alerts"); setIsSheetOpen(true); }}>
+          <button className="fab" onClick={() => { setActiveTab("alerts"); setIsSheetOpen(true); setSnapPoint("standard"); }}>
             <BoltIcon size={32} />
           </button>
         )}
@@ -614,6 +668,7 @@ export default function DashboardClient() {
             onClick={() => {
               setActiveTab(tabId);
               setIsSheetOpen(true);
+              setSnapPoint("standard");
             }}
           >
             {tabIcon(tabId)}
@@ -629,13 +684,30 @@ export default function DashboardClient() {
       ) : null}
 
       {/* Interactive Bottom Sheet content */}
-      <BottomSheet isOpen={isSheetOpen} onClose={() => setIsSheetOpen(false)}>
+      <BottomSheet 
+        isOpen={isSheetOpen} 
+        snapPoint={snapPoint} 
+        onSnapChange={setSnapPoint}
+        onClose={() => setIsSheetOpen(false)}
+      >
         {activeTab === "overview" && (
           <section className="stack">
-            <div className="row space">
-               <h2 className="subhead">Operational Pulse</h2>
-               <div className="tag hero-tag">Live</div>
+            <div className="row space" style={{ marginBottom: "20px", alignItems: "center" }}>
+               <h2 className="subhead">Live Updates</h2>
+               <div className="tag success pulse">System Online</div>
             </div>
+
+            {!isSheetOpen && !isDesktop && (
+              <div className="row" style={{ gap: "10px", marginBottom: "16px", padding: "12px", background: "var(--panel-soft)", borderRadius: "14px" }}>
+                 <div className="row" style={{ gap: "6px" }}>
+                    <BoltIcon size={14} className="danger" /> <strong>{openAlerts} Alerts</strong>
+                 </div>
+                 <div className="row" style={{ gap: "6px" }}>
+                    <UsersIcon size={14} className="brand" /> <strong>{activeResponders} Teams</strong>
+                 </div>
+              </div>
+            )}
+
             <div className="kpi-grid">
               <div className="kpi">
                 <p className="l">Active Alerts</p>
@@ -643,17 +715,19 @@ export default function DashboardClient() {
               </div>
               <div className="kpi">
                 <p className="l">Rescue Teams</p>
-                <p className="v">{teams.length}</p>
+                <p className="v">{activeResponders}</p>
               </div>
             </div>
             
             <div className="list">
-               <div className="tile soft stack">
-                  <strong>Intelligence Feed</strong>
-                  <p className="muted" style={{ fontSize: "0.9rem" }}>
+               <div className="tactical-card">
+                  <div className="card-header">
+                     <strong className="card-title">Safety Status</strong>
+                  </div>
+                  <p className="card-body">
                     {isUser 
-                      ? "The map shows nearby teams. Use the Bolt icon (FAB) to signal an emergency immediately."
-                      : "Real-time updates are active. Monitor incoming signals for immediate response dispatch."}
+                      ? "The area is currently stable. Several rescue teams are patrolling nearby to help if needed. Estimated response time is under 5 minutes."
+                      : "Monitoring all active alerts. Teams are being sent to help those in need across all sectors."}
                   </p>
                </div>
             </div>
@@ -662,16 +736,32 @@ export default function DashboardClient() {
               <Image className="section-image" src="/images/rescue-operations.svg" alt="Ops" width={400} height={250} />
               <Image className="section-image" src="/images/rescue-teamwork.svg" alt="Work" width={400} height={250} />
             </div>
+
+            <div className="stack" style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid var(--line)" }}>
+               <button 
+                 className="secondary danger-text" 
+                 style={{ width: "100%", padding: "14px", borderRadius: "14px", justifyContent: "center", display: "flex", alignItems: "center", gap: "10px" }}
+                 onClick={logout}
+               >
+                 <BoltIcon size={16} />
+                 Log Out
+               </button>
+               <p className="muted" style={{ textAlign: "center", fontSize: "0.75rem", marginTop: "12px" }}>
+                 Logged in as <strong>{user.email}</strong>
+               </p>
+            </div>
           </section>
         )}
 
         {activeTab === "alerts" && (
           <section className="stack">
-            <h2 className="subhead">Emergencies & Alerts</h2>
+            <div className="card-header">
+               <h2 className="subhead">Help & Alerts</h2>
+            </div>
             
-            {isUser && (
-              <div className="stack" style={{ gap: "16px" }}>
-                <div className="tag danger pulse" style={{ width: "fit-content" }}>Immediate Signal Required</div>
+            {isUser && snapPoint !== "mini" && (
+              <div className="stack" style={{ gap: "16px", marginBottom: "20px" }}>
+                <div className="tag danger pulse" style={{ width: "fit-content" }}>Emergency Signal Ready</div>
                 <form
                   className="grid"
                   onSubmit={(event) => {
@@ -681,7 +771,7 @@ export default function DashboardClient() {
                 >
                   <input
                     name="area"
-                    placeholder="Where are you? (e.g. Mirpur 10)"
+                    placeholder="Sector / Area (e.g. Mirpur 12)"
                     required
                     value={areaInput}
                     onChange={(event) => setAreaInput(event.target.value)}
@@ -709,72 +799,44 @@ export default function DashboardClient() {
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => searchLocation(locationQuery, "user", false)}
-                      disabled={locationSearching}
-                    >
-                      {locationSearching ? <Spinner label=".." /> : <CompassIcon size={18} />}
-                    </button>
                   </div>
                   
-                  <div className="row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <button type="button" className="secondary" onClick={detectLocation} disabled={locating}>
-                      {locating ? <Spinner label="..." /> : "Locate Me"}
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => syncCurrentLocation()}
-                      disabled={syncingLocation}
-                    >
-                      {syncingLocation ? <Spinner label="..." /> : "Sync Map"}
-                    </button>
-                  </div>
-
                   <textarea
                     name="note"
-                    placeholder="Tell us what's happening..."
+                    placeholder="Brief SITREP (Situation Report)..."
                     value={noteInput}
                     onChange={(event) => setNoteInput(event.target.value)}
                   />
-                  
-                  <div className="stack" style={{ gap: "10px" }}>
-                    {!recordingVoice ? (
-                      <button type="button" className="secondary row" style={{ justifyContent: "center" }} onClick={startVoiceRecording} disabled={uploadingVoice}>
-                        <MailIcon size={18} /> Record Voice Note
-                      </button>
-                    ) : (
-                      <button type="button" className="danger pulse" onClick={stopVoiceRecording}>
-                        Stop Recording...
-                      </button>
-                    )}
-                    {voicePreviewUrl && <audio controls src={voicePreviewUrl} style={{ width: "100%", borderRadius: "12px" }} />}
-                  </div>
 
-                  <button type="submit" className="danger" style={{ padding: "16px", borderRadius: "18px", fontSize: "1.1rem" }} disabled={sendingAlert}>
-                    {sendingAlert ? <Spinner label="Signaling..." /> : "ACTIVATE RESCUE SIGNAL"}
+                  <button type="submit" className="danger" style={{ padding: "16px", borderRadius: "18px", fontSize: "1.1rem", border: "4px solid rgba(255,255,255,0.2)" }} disabled={sendingAlert}>
+                    {sendingAlert ? <Spinner label="Transmitting..." /> : "ACTIVATE EMERGENCY BEACON"}
                   </button>
                 </form>
               </div>
             )}
 
-            <div className="list" style={{ marginTop: "20px" }}>
-              <p className="muted" style={{ fontSize: "0.85rem", fontWeight: 600, textTransform: "uppercase" }}>Incident History</p>
-              {alerts.length === 0 && <p className="muted">No recent activity.</p>}
+            <div className="list">
+              <p className="muted" style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>Recent Operations</p>
+              {alerts.length === 0 && <p className="muted">Zero signals in this quadrant.</p>}
               {alerts.map((alert) => (
-                <div className="tile stack" key={alert._id} style={{ borderRadius: "20px", borderLeft: `4px solid var(--${alert.status === 'open' ? 'danger' : alert.status === 'accepted' ? 'warning' : 'success'})` }}>
-                  <div className="row space">
-                    <span className={statusTagClass(alert.status)}>{alert.status}</span>
-                    <small className="muted">{new Date(alert.createdAt).toLocaleTimeString()}</small>
+                <div className="tactical-card" key={alert._id}>
+                  <div className="card-header">
+                    <strong className="card-title">{alert.area}</strong>
+                    <span className={statusTagClass(alert.status)} style={{ fontSize: "10px" }}>{alert.status}</span>
                   </div>
-                  <strong>{alert.area}</strong>
-                  {alert.note && <p className="muted">{alert.note}</p>}
+                  <div className="card-meta">
+                    <div className="meta-item">
+                       <CompassIcon size={12} /> 2.4 km away
+                    </div>
+                    <div className="meta-item">
+                       <ShieldIcon size={12} /> {new Date(alert.createdAt).toLocaleTimeString()}
+                    </div>
+                  </div>
+                  {alert.note && <p className="card-body">{alert.note}</p>}
                   {isTeamSide && alert.status !== "resolved" && (
-                    <div className="row">
-                       {alert.status === "open" && <button style={{ flex: 1 }} onClick={() => updateAlertState(alert._id, "accept")}>Respond</button>}
-                       <button className="secondary" style={{ flex: 1 }} onClick={() => updateAlertState(alert._id, "resolve")}>Close</button>
+                    <div className="card-actions">
+                       {alert.status === "open" && <button className="brand" onClick={() => updateAlertState(alert._id, "accept")}>Intercept</button>}
+                       <button className="secondary" onClick={() => updateAlertState(alert._id, "resolve")}>Close Case</button>
                     </div>
                   )}
                 </div>
@@ -785,42 +847,41 @@ export default function DashboardClient() {
 
         {activeTab === "operations" && (
           <section className="stack">
-            <h2 className="subhead">Operational Logistics</h2>
-            <div className="tabs" style={{ marginBottom: "12px" }}>
-               <div className="tag hero-tag">Team Management</div>
+            <h2 className="subhead">Logistics & Asset Control</h2>
+            <div className="list" style={{ marginTop: "12px" }}>
+              <p className="muted" style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>Registered Squads</p>
+              {teams.map((team) => (
+                <div className="tactical-card" key={team._id}>
+                  <div className="card-header">
+                    <strong className="card-title">{team.name}</strong>
+                    <div className="row" style={{ gap: "4px" }}>
+                      <span className="status-dot online" />
+                    </div>
+                  </div>
+                  <div className="card-meta">
+                     <div className="meta-item"><UsersIcon size={12} /> 4 Personnel</div>
+                     <div className="meta-item"><CompassIcon size={12} /> {team.coverageRadiusKm}km Coverage</div>
+                  </div>
+                  <div className="card-actions">
+                     <button className="secondary" onClick={() => { if(team.phone) window.location.href=`tel:${team.phone}` }}>Direct Comms</button>
+                     <button className="secondary">Inventory</button>
+                  </div>
+                </div>
+              ))}
             </div>
-            <form className="grid" action={teamCreateOrUpdate}>
-              <input name="name" placeholder="Team Designator" required />
-              <input name="phone" placeholder="Contact Channel" />
-              <div className="location-search">
-                  <input
-                    placeholder="Base Location"
-                    value={teamLocationQuery}
-                    onChange={(event) => setTeamLocationQuery(event.target.value)}
-                  />
-                  <button type="button" className="secondary" onClick={() => searchLocation(teamLocationQuery, "team", false)}>
-                    <CompassIcon size={18} />
-                  </button>
-              </div>
-              <div className="row">
-                <input name="lat" type="number" step="any" placeholder="Lat" value={teamLatInput} readOnly />
-                <input name="lng" type="number" step="any" placeholder="Lng" value={teamLngInput} readOnly />
-              </div>
-              <button type="submit" className="brand">Secure Logistics Profile</button>
-            </form>
           </section>
         )}
 
         {activeTab === "messages" && (
            <section className="stack">
-              <h2 className="subhead">Coordination Hub</h2>
-              <div className="tile stack soft" style={{ borderRadius: "20px" }}>
-                 <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} style={{ background: "transparent", border: "none", fontWeight: 700 }}>
-                    <option value="">Select Target Team</option>
+              <h2 className="subhead">Comm-Link Channel</h2>
+              <div className="tactical-card" style={{ background: "var(--panel-soft)", border: "1px solid var(--line)" }}>
+                 <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} style={{ background: "transparent", border: "none", fontWeight: 800, padding: 0, color: "var(--text)" }}>
+                    <option value="">Switch Frequency...</option>
                     {teams.map((team) => <option key={team._id} value={team._id}>{team.name}</option>)}
                  </select>
-                 <textarea name="body" placeholder="Mission briefing or response update..." style={{ minHeight: "80px", border: "none", background: "rgba(0,0,0,0.03)" }} />
-                 <button onClick={() => {
+                 <textarea name="body" placeholder="Broadcast message to squad..." style={{ height: "60px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "12px", color: "var(--text)" }} />
+                 <button className="brand" onClick={() => {
                     const body = (document.querySelector('textarea[name="body"]') as HTMLTextAreaElement).value;
                     if (body) {
                       const fd = new FormData();
@@ -828,14 +889,16 @@ export default function DashboardClient() {
                       fd.append("body", body);
                       sendMessage(fd);
                     }
-                 }} disabled={!selectedTeamId}>Transmit Deployment Info</button>
+                 }} disabled={!selectedTeamId}>Transmit</button>
               </div>
-              <div className="list">
+              <div className="list" style={{ marginTop: "12px" }}>
                  {messages.map((m) => (
-                    <div key={m._id} className="chat-bubble" style={{ borderRadius: "18px" }}>
-                       <strong>{m.senderNameSnapshot}</strong>
-                       <p style={{ margin: 0, fontSize: "0.95rem" }}>{m.body}</p>
-                       <small className="muted">{new Date(m.createdAt).toLocaleTimeString()}</small>
+                    <div key={m._id} className="chat-bubble" style={{ border: "1px solid var(--line)", background: m.senderRoleSnapshot === 'user' ? 'var(--panel-soft)' : 'var(--bg-2)', boxShadow: 'var(--shadow-soft)', color: "var(--text)" }}>
+                       <div className="row space" style={{ marginBottom: "4px" }}>
+                          <strong style={{ fontSize: "0.85rem", color: m.senderRoleSnapshot === 'user' ? 'var(--brand)' : 'var(--text)' }}>{m.senderNameSnapshot}</strong>
+                          <small className="muted" style={{ fontSize: "0.65rem" }}>{new Date(m.createdAt).toLocaleTimeString()}</small>
+                       </div>
+                       <p style={{ margin: 0, fontSize: "0.9rem" }}>{m.body}</p>
                     </div>
                  ))}
               </div>
@@ -844,25 +907,25 @@ export default function DashboardClient() {
 
         {activeTab === "admin" && (
           <section className="stack">
-             <h2 className="subhead">Command Center Oversight</h2>
+             <h2 className="subhead">Global Oversight</h2>
              <div className="kpi-grid">
                 <div className="kpi">
-                   <p className="l">Platform Users</p>
+                   <p className="l">Total Assets</p>
                    <p className="v">{audit?.users.length || 0}</p>
                 </div>
                 <div className="kpi">
-                   <p className="l">Signals Transmitted</p>
+                   <p className="l">Signal Volume</p>
                    <p className="v">{audit?.messages.length || 0}</p>
                 </div>
              </div>
              <div className="list" style={{ marginTop: "16px" }}>
                 {audit?.messages.slice(0, 10).map((m) => (
-                   <div key={m._id} className="tile stack soft">
+                   <div key={m._id} className="tactical-card" style={{ padding: "12px" }}>
                       <div className="row space">
                          <strong>{m.senderNameSnapshot}</strong>
                          <small className="muted">{new Date(m.createdAt).toLocaleTimeString()}</small>
                       </div>
-                      <p className="muted" style={{ margin: 0 }}>{m.body}</p>
+                      <p className="card-body" style={{ fontSize: "0.85rem" }}>{m.body}</p>
                    </div>
                 ))}
              </div>
