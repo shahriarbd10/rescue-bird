@@ -433,17 +433,34 @@ export default function DashboardClient() {
       return;
     }
     setSyncingLocation(true);
+    setStatus("Requesting Satellite Lock...");
+
+    // First attempt with high accuracy
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         await syncLocationByCoordinates(lat, lng, "Live location synced on map.");
       },
-      () => {
-        setSyncingLocation(false);
-        setStatus("Unable to sync location. Please allow location access.");
+      (error) => {
+        // Fallback for timeout or failure (common on iOS)
+        console.warn("High accuracy sync failed:", error.message);
+        setStatus("Retrying with standard precision...");
+        
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            await syncLocationByCoordinates(lat, lng, "Location synced (Standard accuracy).");
+          },
+          () => {
+            setSyncingLocation(false);
+            setStatus("Unable to sync location. Please allow GPS access.");
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+        );
       },
-      options || { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      options || { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
     );
   }, [syncLocationByCoordinates]);
 

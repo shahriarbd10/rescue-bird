@@ -37,7 +37,7 @@ export default function BottomSheet({
   const heights = useMemo(() => ({
     mini: "124px",
     standard: "50vh",
-    expanded: "92vh" // Pulls up almost to the top
+    expanded: "90vh" // Safety margin for top notch
   }), []);
 
   useEffect(() => {
@@ -113,6 +113,7 @@ export default function BottomSheet({
           right: isDesktop ? "auto" : 0,
           margin: isDesktop ? "0" : "0 auto",
           width: isDesktop ? "400px" : "min(600px, 100%)",
+          maxHeight: isDesktop ? "90vh" : "90vh",
           background: "var(--bg-2)",
           borderTopLeftRadius: "var(--radius-lg)",
           borderTopRightRadius: "var(--radius-lg)",
@@ -120,7 +121,7 @@ export default function BottomSheet({
           zIndex: 1450, 
           display: "flex",
           flexDirection: "column",
-          padding: isDesktop ? "24px" : "12px 16px min(80px, calc(80px + env(safe-area-inset-bottom, 16px)))",
+          padding: isDesktop ? "24px" : "12px 16px env(safe-area-inset-bottom, 16px)",
           border: "1px solid var(--line)",
           touchAction: "none"
         }}
@@ -148,7 +149,7 @@ export default function BottomSheet({
             overflowY: snapPoint === "expanded" ? "auto" : "hidden",
             opacity: snapPoint === "mini" ? 0.4 : 1,
             transition: "opacity 0.2s ease",
-            paddingBottom: isDesktop ? "0" : "80px",
+            paddingBottom: isDesktop ? "0" : "calc(88px + env(safe-area-inset-bottom, 0px))",
             // Allow pointer events for content only when expanded or standard
             pointerEvents: snapPoint === "mini" ? "none" : "auto"
           }}
