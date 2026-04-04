@@ -11,6 +11,7 @@ import Spinner from "@/components/Spinner";
 
 import BottomSheet, { SnapPoint } from "@/components/BottomSheet";
 import ThemeToggle from "@/components/ThemeToggle";
+import FullDashboardLoader from "@/components/FullDashboardLoader";
 
 const LiveMap = dynamic(() => import("@/components/LiveMap"), {
   ssr: false,
@@ -124,6 +125,7 @@ export default function DashboardClient() {
   const [isSheetOpen, setIsSheetOpen] = useState(true);
   const [snapPoint, setSnapPoint] = useState<SnapPoint>("mini");
   const [isDesktop, setIsDesktop] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
@@ -195,6 +197,8 @@ export default function DashboardClient() {
     if (meJson.user?.role === "user") setActiveTab("alerts");
     if (["rescue_team", "team_staff"].includes(meJson.user?.role)) setActiveTab("overview");
     if (meJson.user?.role === "admin") setActiveTab("admin");
+
+    setLoading(false);
   }, [router]);
 
   const loadMessages = useCallback(async (teamId: string) => {
@@ -572,12 +576,8 @@ export default function DashboardClient() {
     return <ShieldIcon size={16} />;
   }
 
-  if (!user) {
-    return (
-      <div className="stack center" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <SculptureLoader lines={3} />
-      </div>
-    );
+  if (loading || !user) {
+    return <FullDashboardLoader />;
   }
 
   return (
@@ -605,7 +605,7 @@ export default function DashboardClient() {
              <ThemeToggle />
           </div>
 
-          <nav className="row" style={{ gap: "4px", flex: 1, justifyContent: "center" }}>
+          <nav className="desktop-only row" style={{ gap: "4px", flex: 1, justifyContent: "center" }}>
              {visibleTabs.map(tab => (
                <button 
                  key={tab} 
@@ -619,7 +619,7 @@ export default function DashboardClient() {
           </nav>
 
           <div className="row" style={{ gap: "10px" }}>
-            <div className="row" style={{ gap: "4px", background: "var(--panel-soft)", padding: "4px 8px", borderRadius: "10px", border: "1px solid var(--line)" }}>
+            <div className="desktop-only row" style={{ gap: "4px", background: "var(--panel-soft)", padding: "4px 8px", borderRadius: "10px", border: "1px solid var(--line)" }}>
                <div className="mini-pill">
                  <span className="v" style={{ fontSize: "0.85rem" }}>{openAlerts}</span>
                  <span className="l desktop-only" style={{ fontSize: "0.6rem" }}>Alerts</span>
