@@ -653,8 +653,27 @@ export default function DashboardClient() {
                  <span className="l desktop-only" style={{ fontSize: "0.6rem" }}>Teams</span>
                </div>
             </div>
-            <button className="secondary" style={{ width: "40px", height: "40px", borderRadius: "12px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--line)" }} onClick={logout} title="Sign Out">
-              <BoltIcon size={18} className="danger" />
+            
+            <button 
+              className="nav-btn logout-top" 
+              style={{ 
+                padding: "8px 14px", 
+                borderRadius: "12px", 
+                background: "var(--panel-soft)", 
+                border: "1px solid var(--line)", 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "8px", 
+                color: "var(--text)", 
+                fontSize: "0.8rem", 
+                fontWeight: 800,
+                transition: "all 0.2s ease" 
+              }} 
+              onClick={logout} 
+              title="Sign Out"
+            >
+              <BoltIcon size={16} className="danger" />
+              <span className="desktop-only">Log Out</span>
             </button>
           </div>
         </div>

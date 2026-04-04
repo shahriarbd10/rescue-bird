@@ -463,6 +463,23 @@ a {
   color: var(--text);
 }
 
+.logout-top {
+  margin-left: auto;
+  border-color: var(--line) !important;
+  color: var(--brand) !important;
+}
+
+.logout-top:hover {
+  background: var(--panel-soft) !important;
+  border-color: var(--brand) !important;
+}
+
+@media (max-width: 1023px) {
+  .logout-top span {
+    display: none;
+  }
+}
+
 .nav-btn.active {
   background: var(--panel-soft);
   border-color: var(--brand);
