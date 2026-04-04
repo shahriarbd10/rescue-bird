@@ -13,7 +13,6 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("rescue-bird-theme") as Theme;
@@ -24,7 +23,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Default is light, already set.
       document.documentElement.setAttribute("data-theme", "light");
     }
-    setMounted(true);
   }, []);
 
   const toggleTheme = () => {
@@ -33,11 +31,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("rescue-bird-theme", next);
     document.documentElement.setAttribute("data-theme", next);
   };
-
-  // Prevent hydration mismatch by only rendering once mounted on client
-  if (!mounted) {
-     return <>{children}</>;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

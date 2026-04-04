@@ -17,7 +17,12 @@ const sora = Sora({
 
 export const metadata: Metadata = {
   title: "Rescue Bird",
-  description: "Emergency alert and rescue coordination for Bangladesh"
+  description: "Emergency alert and rescue coordination for Bangladesh",
+  icons: {
+    icon: [{ url: "/icon", type: "image/png" }],
+    shortcut: [{ url: "/icon", type: "image/png" }],
+    apple: [{ url: "/apple-icon", type: "image/png" }]
+  }
 };
 
 import { ThemeProvider } from "@/components/ThemeProvider";

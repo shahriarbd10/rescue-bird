@@ -596,16 +596,16 @@ export default function DashboardClient() {
       {/* Professional Command Header (Desktop/Mobile Adaptive) */}
       <header className="tactical-header" style={{ zIndex: 2000 }}>
         <div className="row space header-inner" style={{ height: "100%", padding: "0 20px" }}>
-          <div className="row" style={{ gap: "16px" }}>
-             <BrandLogo size={32} color="#3b82f6" />
+          <div className="row" style={{ gap: "10px" }}>
+             <BrandLogo size={28} color="#3b82f6" />
              <div className="desktop-only stack" style={{ gap: 0 }}>
-                <strong style={{ fontSize: "1rem", color: "var(--text)" }}>Rescue Bird</strong>
-                <small className="muted" style={{ fontSize: "0.7rem" }}>Tactical Network</small>
+                <strong style={{ fontSize: "0.9rem", color: "var(--text)" }}>Rescue Bird</strong>
+                <small className="muted" style={{ fontSize: "0.6rem" }}>Tactical Network</small>
              </div>
              <ThemeToggle />
           </div>
 
-          <nav className="desktop-only row" style={{ gap: "8px" }}>
+          <nav className="row" style={{ gap: "4px", flex: 1, justifyContent: "center" }}>
              {visibleTabs.map(tab => (
                <button 
                  key={tab} 
@@ -613,20 +613,20 @@ export default function DashboardClient() {
                  onClick={() => { setActiveTab(tab); setIsSheetOpen(true); setSnapPoint("standard"); }}
                >
                  {tabIcon(tab)}
-                 <span>{tab}</span>
+                 <span className="desktop-only">{tab}</span>
                </button>
              ))}
           </nav>
 
           <div className="row" style={{ gap: "10px" }}>
-            <div className="desktop-only row" style={{ gap: "8px", background: "var(--panel-soft)", padding: "4px 12px", borderRadius: "12px", border: "1px solid var(--line)" }}>
+            <div className="row" style={{ gap: "4px", background: "var(--panel-soft)", padding: "4px 8px", borderRadius: "10px", border: "1px solid var(--line)" }}>
                <div className="mini-pill">
-                 <span className="v">{openAlerts}</span>
-                 <span className="l">Alerts</span>
+                 <span className="v" style={{ fontSize: "0.85rem" }}>{openAlerts}</span>
+                 <span className="l desktop-only" style={{ fontSize: "0.6rem" }}>Alerts</span>
                </div>
                <div className="mini-pill">
-                 <span className="v">{activeResponders}</span>
-                 <span className="l">Teams</span>
+                 <span className="v" style={{ fontSize: "0.85rem" }}>{activeResponders}</span>
+                 <span className="l desktop-only" style={{ fontSize: "0.6rem" }}>Teams</span>
                </div>
             </div>
             <button className="secondary" style={{ width: "40px", height: "40px", borderRadius: "12px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--line)" }} onClick={logout} title="Sign Out">

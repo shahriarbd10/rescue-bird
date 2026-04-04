@@ -426,12 +426,13 @@ a {
 
 @media (max-width: 1023px) {
   .tactical-header {
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    height: 56px;
+    top: 0;
+    left: 0;
+    right: 0;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    height: 52px;
   }
 }
 
@@ -448,6 +449,13 @@ a {
   font-size: 0.85rem;
   transition: all 0.2s ease;
   cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .nav-btn {
+    padding: 8px 10px;
+    gap: 0;
+  }
 }
 
 .nav-btn:hover {
