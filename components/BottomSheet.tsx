@@ -24,21 +24,39 @@ export default function BottomSheet({
 }: BottomSheetProps) {
   const [mounted, setMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(900);
   const controls = useAnimation();
 
   useEffect(() => {
     setMounted(true);
-    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
-    checkDesktop();
-    window.addEventListener("resize", checkDesktop);
-    return () => window.removeEventListener("resize", checkDesktop);
+    const syncViewport = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+      setViewportHeight(window.innerHeight || 900);
+    };
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
   }, []);
 
-  const heights = useMemo(() => ({
-    mini: "124px",
-    standard: "50vh",
-    expanded: "90vh" // Safety margin for top notch
-  }), []);
+  const heights = useMemo(() => {
+    if (isDesktop) {
+      const standard = Math.round(Math.max(520, Math.min(viewportHeight * 0.64, 760)));
+      const expanded = Math.round(Math.max(620, Math.min(viewportHeight * 0.84, viewportHeight - 60)));
+      return {
+        mini: "148px",
+        standard: `${standard}px`,
+        expanded: `${expanded}px`
+      };
+    }
+
+    const standard = Math.round(Math.max(420, Math.min(viewportHeight * 0.62, 680)));
+    const expanded = Math.round(Math.max(520, Math.min(viewportHeight * 0.86, viewportHeight - 56)));
+    return {
+      mini: "112px",
+      standard: `${standard}px`,
+      expanded: `${expanded}px`
+    };
+  }, [isDesktop, viewportHeight]);
 
   useEffect(() => {
     if (mounted) {
@@ -143,7 +161,7 @@ export default function BottomSheet({
           className="bottom-sheet-content"
           style={{ 
             flex: 1, 
-            overflowY: snapPoint === "expanded" ? "auto" : "hidden",
+            overflowY: snapPoint === "mini" ? "hidden" : "auto",
             opacity: snapPoint === "mini" ? 0.4 : 1,
             transition: "opacity 0.2s ease",
             paddingBottom: isDesktop ? "0" : "140px",
