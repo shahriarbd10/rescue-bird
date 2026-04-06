@@ -56,10 +56,31 @@ export async function POST(req: NextRequest) {
     const input = actionSchema.parse(body);
     const alert = await AlertModel.findById(input.alertId);
     if (!alert) return NextResponse.json({ error: "Alert not found" }, { status: 404 });
+
+    if (user.role !== "admin") {
+      let actorTeamId = user.teamId ? String(user.teamId) : null;
+      if (user.role === "rescue_team" && !actorTeamId) {
+        const ownTeam = await RescueTeamModel.findOne({ ownerUserId: user._id }).select("_id").lean();
+        if (ownTeam?._id) actorTeamId = String(ownTeam._id);
+      }
+      if (!actorTeamId) {
+        return forbidden("You are not linked to a rescue team");
+      }
+      if (!alert.assignedTeamId || String(alert.assignedTeamId) !== actorTeamId) {
+        return forbidden("You can only update alerts assigned to your team");
+      }
+    }
+
     if (input.action === "accept") {
+      if (alert.status !== "open") {
+        return NextResponse.json({ error: "Only open alerts can be accepted" }, { status: 409 });
+      }
       alert.status = "accepted";
       alert.acceptedByUserId = user._id;
     } else {
+      if (alert.status === "resolved") {
+        return NextResponse.json({ error: "Alert is already resolved" }, { status: 409 });
+      }
       alert.status = "resolved";
     }
     await alert.save();

@@ -218,13 +218,6 @@ export default function DashboardClient() {
   }, [selectedTeamId, loadMessages]);
 
   useEffect(() => {
-    if (!loading && user?.role === "user" && !autoSyncedUserRef.current) {
-      autoSyncedUserRef.current = user._id;
-      syncCurrentLocation().catch(err => console.error("Auto-sync failed:", err));
-    }
-  }, [loading, user]);
-
-  useEffect(() => {
     return () => {
       if (voicePreviewUrl) URL.revokeObjectURL(voicePreviewUrl);
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());

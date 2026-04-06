@@ -2,16 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BoltIcon, HomeIcon, KeyIcon, MailIcon, ShieldIcon, UsersIcon } from "@/components/BrandIcons";
+import { HomeIcon, KeyIcon, MailIcon } from "@/components/BrandIcons";
 import BrandLogo from "@/components/BrandLogo";
 import Spinner from "@/components/Spinner";
-
-const roles = [
-  { value: "user", label: "Citizen / User" },
-  { value: "rescue_team", label: "Rescue Team Leader" },
-  { value: "team_staff", label: "Support Staff" },
-  { value: "admin", label: "Command Admin" }
-];
 
 export default function RegisterClient() {
   const [loading, setLoading] = useState(false);
@@ -116,22 +109,6 @@ export default function RegisterClient() {
               />
             </label>
           </div>
-
-          <div className="stack" style={{ gap: "6px" }}>
-            <label className="muted" style={{ fontSize: "0.7rem", fontWeight: 800, textTransform: "uppercase" }}>Your Role</label>
-            <select name="role" defaultValue="user">
-              {roles.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <input 
-            name="teamId" 
-            placeholder="Assigned Team ID (Staff Only)" 
-          />
 
           <button type="submit" className="brand" disabled={loading} style={{ padding: "16px", borderRadius: "16px", marginTop: "8px" }}>
             {loading ? <Spinner label="Setting up account" /> : "Create Account"}
