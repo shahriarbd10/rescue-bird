@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { z } from "zod";
 import { forbidden, requireApiAuth, unauthorized } from "@/lib/auth";
 import { connectDb } from "@/lib/db";
+import AlertModel from "@/models/Alert";
 import MessageModel from "@/models/Message";
 import RescueTeamModel from "@/models/RescueTeam";
 
@@ -18,6 +20,9 @@ export async function GET(req: NextRequest) {
 
   const teamId = req.nextUrl.searchParams.get("teamId");
   if (!teamId) return NextResponse.json({ error: "teamId is required" }, { status: 400 });
+  if (!mongoose.isValidObjectId(teamId)) {
+    return NextResponse.json({ error: "Invalid teamId" }, { status: 400 });
+  }
 
   const team = await RescueTeamModel.findById(teamId).lean();
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
@@ -28,6 +33,12 @@ export async function GET(req: NextRequest) {
     (user.role === "team_staff" && String(user.teamId) === teamId);
 
   if (!isTeamMember && user.role !== "user") return forbidden();
+  if (user.role === "user") {
+    const hasAlertForTeam = await AlertModel.exists({ userId: user._id, assignedTeamId: teamId });
+    if (!hasAlertForTeam) {
+      return forbidden("You can only access messages for teams assigned to your alerts");
+    }
+  }
 
   const filter = isTeamMember
     ? { teamId }
@@ -46,6 +57,12 @@ export async function POST(req: NextRequest) {
   await connectDb();
 
   const input = schema.parse(await req.json());
+  if (!mongoose.isValidObjectId(input.teamId)) {
+    return NextResponse.json({ error: "Invalid teamId" }, { status: 400 });
+  }
+  if (input.receiverId && !mongoose.isValidObjectId(input.receiverId)) {
+    return NextResponse.json({ error: "Invalid receiverId" }, { status: 400 });
+  }
   const team = await RescueTeamModel.findById(input.teamId).lean();
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
@@ -55,6 +72,12 @@ export async function POST(req: NextRequest) {
     (user.role === "team_staff" && String(user.teamId) === input.teamId);
 
   if (!isTeamMember && user.role !== "user") return forbidden();
+  if (user.role === "user") {
+    const hasAlertForTeam = await AlertModel.exists({ userId: user._id, assignedTeamId: input.teamId });
+    if (!hasAlertForTeam) {
+      return forbidden("You can only message teams assigned to your alerts");
+    }
+  }
 
   const message = await MessageModel.create({
     teamId: input.teamId,

@@ -11,12 +11,24 @@ const AlertSchema = new mongoose.Schema(
     },
     note: { type: String, trim: true, default: "" },
     voiceNoteUrl: { type: String, trim: true, default: "" },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high", "critical"],
+      default: "high"
+    },
     status: {
       type: String,
       enum: ["open", "accepted", "resolved"],
       default: "open"
     },
-    acceptedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }
+    acceptedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    acceptedAt: { type: Date, default: null },
+    resolvedAt: { type: Date, default: null },
+    escalationCandidates: [{ type: mongoose.Schema.Types.ObjectId, ref: "RescueTeam" }],
+    escalationIndex: { type: Number, default: 0 },
+    nextEscalationAt: { type: Date, default: null },
+    escalatedAt: { type: Date, default: null },
+    needsManualDispatch: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

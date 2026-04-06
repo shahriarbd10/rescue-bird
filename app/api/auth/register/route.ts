@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDb } from "@/lib/db";
 import { otpMailTemplate } from "@/lib/mail-templates";
+import { generateOtpCode, hashOtpCode } from "@/lib/otp";
+import { checkRateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 import { sendSmtpMail } from "@/lib/smtp-mail";
 import OtpCodeModel from "@/models/OtpCode";
 import UserModel from "@/models/User";
@@ -14,16 +16,23 @@ const schema = z.object({
   password: z.string().min(6)
 });
 
-function randomOtp() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const ipLimit = checkRateLimit(`auth:register:ip:${ip}`, { limit: 12, windowMs: 15 * 60 * 1000 });
+    if (!ipLimit.ok) {
+      return tooManyRequests(ipLimit.retryAfterSeconds, "Too many registration attempts from this network.");
+    }
+
     const body = schema.parse(await req.json());
     await connectDb();
 
     const email = body.email.toLowerCase().trim();
+    const emailLimit = checkRateLimit(`auth:register:email:${email}`, { limit: 5, windowMs: 15 * 60 * 1000 });
+    if (!emailLimit.ok) {
+      return tooManyRequests(emailLimit.retryAfterSeconds, "Too many registration attempts for this email.");
+    }
+
     const existing = await UserModel.findOne({ email });
     if (existing) {
       if (existing.verifiedAt) {
@@ -45,11 +54,12 @@ export async function POST(req: Request) {
       verifiedAt: null
     });
 
-    const code = randomOtp();
+    const code = generateOtpCode();
+    const codeHash = hashOtpCode(email, code);
     await OtpCodeModel.deleteMany({ email, purpose: "verify-email" });
     await OtpCodeModel.create({
       email,
-      code,
+      codeHash,
       purpose: "verify-email",
       expiresAt: new Date(Date.now() + 10 * 60 * 1000)
     });

@@ -45,8 +45,11 @@ type Alert = {
   area: string;
   note: string;
   voiceNoteUrl: string;
+  priority?: "low" | "medium" | "high" | "critical";
   status: "open" | "accepted" | "resolved";
   assignedTeamId?: string | null;
+  nextEscalationAt?: string | null;
+  needsManualDispatch?: boolean;
   createdAt: string;
 };
 
@@ -56,6 +59,22 @@ type Message = {
   senderNameSnapshot: string;
   senderRoleSnapshot: string;
   createdAt: string;
+};
+
+type AdminMetrics = {
+  totals: {
+    users: number;
+    teams: number;
+    messages: number;
+    alerts30d: number;
+  };
+  alerts: {
+    statusCounts: { open: number; accepted: number; resolved: number };
+    priorityCounts: { low: number; medium: number; high: number; critical: number };
+    avgAcceptMinutes7d: number;
+    avgResolveMinutes7d: number;
+    areaHotspots30d: Array<{ area: string; count: number }>;
+  };
 };
 
 type TabId = "overview" | "alerts" | "operations" | "messages" | "admin";
@@ -93,7 +112,8 @@ export default function DashboardClient() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [audit, setAudit] = useState<{ messages: Message[]; users: User[] } | null>(null);
+  const [audit, setAudit] = useState<{ messages: Message[]; users: User[]; alerts: Alert[] } | null>(null);
+  const [adminMetrics, setAdminMetrics] = useState<AdminMetrics | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [status, setStatus] = useState("");
   const [activeTab, setActiveTab] = useState<TabId>("overview");
@@ -102,6 +122,7 @@ export default function DashboardClient() {
   const [lngInput, setLngInput] = useState("");
   const [noteInput, setNoteInput] = useState("");
   const [voiceNoteInput, setVoiceNoteInput] = useState("");
+  const [priorityInput, setPriorityInput] = useState<"low" | "medium" | "high" | "critical">("high");
   const [locating, setLocating] = useState(false);
   const [sendingAlert, setSendingAlert] = useState(false);
   const [locationQuery, setLocationQuery] = useState("");
@@ -188,10 +209,12 @@ export default function DashboardClient() {
     setSelectedTeamId((prev) => prev || teamId);
 
     if (meJson.user?.role === "admin") {
-      const auditRes = await fetch("/api/admin/audit");
+      const [auditRes, metricsRes] = await Promise.all([fetch("/api/admin/audit"), fetch("/api/admin/metrics")]);
       if (auditRes.ok) setAudit(await auditRes.json());
+      if (metricsRes.ok) setAdminMetrics(await metricsRes.json());
     } else {
       setAudit(null);
+      setAdminMetrics(null);
     }
 
     if (meJson.user?.role === "user") setActiveTab("alerts");
@@ -215,6 +238,32 @@ export default function DashboardClient() {
 
   useEffect(() => {
     if (selectedTeamId) loadMessages(selectedTeamId);
+  }, [selectedTeamId, loadMessages]);
+
+  useEffect(() => {
+    if (!user?._id) return;
+    const stream = new EventSource("/api/realtime?scope=base");
+    const onRefresh = () => {
+      void loadBase();
+    };
+    stream.addEventListener("refresh", onRefresh);
+    return () => {
+      stream.removeEventListener("refresh", onRefresh);
+      stream.close();
+    };
+  }, [user?._id, loadBase]);
+
+  useEffect(() => {
+    if (!selectedTeamId) return;
+    const stream = new EventSource(`/api/realtime?scope=messages&teamId=${encodeURIComponent(selectedTeamId)}`);
+    const onRefresh = () => {
+      void loadMessages(selectedTeamId);
+    };
+    stream.addEventListener("refresh", onRefresh);
+    return () => {
+      stream.removeEventListener("refresh", onRefresh);
+      stream.close();
+    };
   }, [selectedTeamId, loadMessages]);
 
   useEffect(() => {
@@ -254,7 +303,8 @@ export default function DashboardClient() {
         lat,
         lng,
         note: noteInput.trim(),
-        voiceNoteUrl: voiceNoteInput.trim()
+        voiceNoteUrl: voiceNoteInput.trim(),
+        priority: priorityInput
       })
     });
     const json = await res.json();
@@ -263,6 +313,7 @@ export default function DashboardClient() {
     if (res.ok) {
       setNoteInput("");
       setVoiceNoteInput("");
+      setPriorityInput("high");
     }
     await loadBase();
   }
@@ -499,6 +550,15 @@ export default function DashboardClient() {
 
   async function teamCreateOrUpdate(formData: FormData) {
     setStatus("");
+    const latRaw = String(formData.get("lat") || "").trim();
+    const lngRaw = String(formData.get("lng") || "").trim();
+    const parsedLat = Number(latRaw);
+    const parsedLng = Number(lngRaw);
+    const location =
+      latRaw && lngRaw && Number.isFinite(parsedLat) && Number.isFinite(parsedLng)
+        ? { lat: parsedLat, lng: parsedLng }
+        : undefined;
+
     const payload = {
       name: String(formData.get("name") || ""),
       description: String(formData.get("description") || ""),
@@ -507,10 +567,7 @@ export default function DashboardClient() {
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
-      location: {
-        lat: Number(formData.get("lat") || 0),
-        lng: Number(formData.get("lng") || 0)
-      },
+      location,
       coverageRadiusKm: Number(formData.get("coverageRadiusKm") || 5)
     };
     const isUpdate = String(formData.get("teamId") || "");
@@ -563,7 +620,7 @@ export default function DashboardClient() {
     await loadMessages(payload.teamId);
   }
 
-  async function updateAlertState(alertId: string, action: "accept" | "resolve") {
+  async function updateAlertState(alertId: string, action: "accept" | "resolve" | "escalate") {
     const res = await fetch("/api/alerts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -580,6 +637,13 @@ export default function DashboardClient() {
     return "tag danger";
   }
 
+  function priorityTagClass(priority: NonNullable<Alert["priority"]>) {
+    if (priority === "critical") return "danger";
+    if (priority === "high") return "warn";
+    if (priority === "medium") return "brand";
+    return "ok";
+  }
+
   const activeResponders = useMemo(() => {
     // Mock logic for responders if not in data
     return mapData?.users.filter(u => u.role !== "user").length || 0;
@@ -591,6 +655,11 @@ export default function DashboardClient() {
     if (tabId === "messages") return <MailIcon size={16} />;
     if (tabId === "operations") return <UsersIcon size={16} />;
     return <ShieldIcon size={16} />;
+  }
+
+  function exportAdmin(kind: "alerts" | "messages" | "users") {
+    if (!isAdmin) return;
+    window.location.href = `/api/admin/export?kind=${kind}`;
   }
 
   if (loading || !user) {
@@ -843,6 +912,16 @@ export default function DashboardClient() {
                     value={noteInput}
                     onChange={(event) => setNoteInput(event.target.value)}
                   />
+                  <select
+                    name="priority"
+                    value={priorityInput}
+                    onChange={(event) => setPriorityInput(event.target.value as "low" | "medium" | "high" | "critical")}
+                  >
+                    <option value="low">Priority: Low</option>
+                    <option value="medium">Priority: Medium</option>
+                    <option value="high">Priority: High</option>
+                    <option value="critical">Priority: Critical</option>
+                  </select>
 
                   <button type="submit" className="danger" style={{ padding: "16px", borderRadius: "18px", fontSize: "1.1rem", border: "4px solid rgba(255,255,255,0.2)" }} disabled={sendingAlert}>
                     {sendingAlert ? <Spinner label="Transmitting..." /> : "ACTIVATE EMERGENCY BEACON"}
@@ -858,7 +937,12 @@ export default function DashboardClient() {
                 <div className="tactical-card" key={alert._id}>
                   <div className="card-header">
                     <strong className="card-title">{alert.area}</strong>
-                    <span className={statusTagClass(alert.status)} style={{ fontSize: "10px" }}>{alert.status}</span>
+                    <div className="row" style={{ gap: "6px" }}>
+                      <span className={`tag ${priorityTagClass(alert.priority || "high")}`} style={{ fontSize: "10px" }}>
+                        {(alert.priority || "high").toUpperCase()}
+                      </span>
+                      <span className={statusTagClass(alert.status)} style={{ fontSize: "10px" }}>{alert.status}</span>
+                    </div>
                   </div>
                   <div className="card-meta">
                     <div className="meta-item">
@@ -869,9 +953,20 @@ export default function DashboardClient() {
                     </div>
                   </div>
                   {alert.note && <p className="card-body">{alert.note}</p>}
+                  {alert.nextEscalationAt && alert.status === "open" && (
+                    <p className="muted" style={{ fontSize: "0.75rem", margin: "6px 0 0" }}>
+                      Escalation ETA: {new Date(alert.nextEscalationAt).toLocaleTimeString()}
+                    </p>
+                  )}
+                  {alert.needsManualDispatch && (
+                    <p className="tag warn" style={{ width: "fit-content", marginTop: "8px", fontSize: "10px" }}>
+                      Manual Dispatch Required
+                    </p>
+                  )}
                   {isTeamSide && alert.status !== "resolved" && (
                     <div className="card-actions">
                        {alert.status === "open" && <button className="brand" onClick={() => updateAlertState(alert._id, "accept")}>Intercept</button>}
+                       {alert.status === "open" && isAdmin && <button className="secondary" onClick={() => updateAlertState(alert._id, "escalate")}>Escalate</button>}
                        <button className="secondary" onClick={() => updateAlertState(alert._id, "resolve")}>Close Case</button>
                     </div>
                   )}
@@ -944,20 +1039,60 @@ export default function DashboardClient() {
         {activeTab === "admin" && (
           <section className="stack">
              <h2 className="subhead">Global Oversight</h2>
-             <div className="kpi-grid">
-                <div className="kpi">
-                   <p className="l">Total Assets</p>
-                   <p className="v">{audit?.users.length || 0}</p>
-                </div>
-                <div className="kpi">
-                   <p className="l">Signal Volume</p>
-                   <p className="v">{audit?.messages.length || 0}</p>
-                </div>
-             </div>
-             <div className="list" style={{ marginTop: "16px" }}>
-                {audit?.messages.slice(0, 10).map((m) => (
-                   <div key={m._id} className="tactical-card" style={{ padding: "12px" }}>
-                      <div className="row space">
+              <div className="kpi-grid">
+                 <div className="kpi">
+                    <p className="l">Total Assets</p>
+                    <p className="v">{adminMetrics?.totals.users || 0}</p>
+                 </div>
+                 <div className="kpi">
+                    <p className="l">Signal Volume</p>
+                    <p className="v">{adminMetrics?.totals.messages || 0}</p>
+                 </div>
+                 <div className="kpi">
+                    <p className="l">Avg Accept (7d)</p>
+                    <p className="v">{adminMetrics?.alerts.avgAcceptMinutes7d || 0}m</p>
+                 </div>
+                 <div className="kpi">
+                    <p className="l">Avg Resolve (7d)</p>
+                    <p className="v">{adminMetrics?.alerts.avgResolveMinutes7d || 0}m</p>
+                 </div>
+              </div>
+              <div className="row" style={{ gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
+                <button className="secondary" onClick={() => exportAdmin("alerts")}>Export Alerts CSV</button>
+                <button className="secondary" onClick={() => exportAdmin("messages")}>Export Messages CSV</button>
+                <button className="secondary" onClick={() => exportAdmin("users")}>Export Users CSV</button>
+              </div>
+              <div className="list" style={{ marginTop: "16px" }}>
+                <p className="muted" style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>Hotspot Areas (30d)</p>
+                {(adminMetrics?.alerts.areaHotspots30d || []).map((h) => (
+                  <div key={h.area} className="tactical-card" style={{ padding: "10px 12px" }}>
+                    <div className="row space">
+                      <strong style={{ textTransform: "capitalize" }}>{h.area}</strong>
+                      <span className="tag warn">{h.count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="list" style={{ marginTop: "16px" }}>
+                 <p className="muted" style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>Alert Timeline</p>
+                 {audit?.alerts.slice(0, 10).map((a) => (
+                    <div key={a._id} className="tactical-card" style={{ padding: "12px" }}>
+                       <div className="row space">
+                          <strong>{a.area}</strong>
+                          <small className="muted">{new Date(a.createdAt).toLocaleTimeString()}</small>
+                       </div>
+                       <p className="card-body" style={{ fontSize: "0.85rem", marginBottom: "6px" }}>
+                         {a.status.toUpperCase()} | {(a.priority || "high").toUpperCase()}
+                       </p>
+                       {a.needsManualDispatch && <span className="tag warn">Manual Dispatch Needed</span>}
+                    </div>
+                 ))}
+              </div>
+              <div className="list" style={{ marginTop: "16px" }}>
+                 <p className="muted" style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>Recent Messages</p>
+                 {audit?.messages.slice(0, 10).map((m) => (
+                    <div key={m._id} className="tactical-card" style={{ padding: "12px" }}>
+                       <div className="row space">
                          <strong>{m.senderNameSnapshot}</strong>
                          <small className="muted">{new Date(m.createdAt).toLocaleTimeString()}</small>
                       </div>

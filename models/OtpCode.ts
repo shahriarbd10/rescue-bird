@@ -3,7 +3,9 @@ import mongoose, { InferSchemaType, Model } from "mongoose";
 const OtpCodeSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, lowercase: true, trim: true },
-    code: { type: String, required: true },
+    codeHash: { type: String, required: true },
+    // Legacy fallback for older records; new records should use codeHash only.
+    code: { type: String, required: false, default: null },
     purpose: { type: String, enum: ["verify-email"], required: true },
     expiresAt: { type: Date, required: true }
   },

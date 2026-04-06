@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { forbidden, requireApiAuth, unauthorized } from "@/lib/auth";
 import { connectDb } from "@/lib/db";
+import { isValidLatLng } from "@/lib/validation";
 import AlertModel from "@/models/Alert";
 import RescueTeamModel from "@/models/RescueTeam";
 import UserModel from "@/models/User";
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const lat = Number(body.lat);
   const lng = Number(body.lng);
-  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+  if (!isValidLatLng(lat, lng)) {
     return NextResponse.json({ error: "Invalid location coordinates" }, { status: 400 });
   }
 

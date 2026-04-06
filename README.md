@@ -77,6 +77,14 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+### Quality Checks
+
+```bash
+npm run lint
+npm run test
+npm run build
+```
+
 ## Environment Variables
 
 Use `.env.local` and configure:

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { forbidden, requireApiAuth, unauthorized } from "@/lib/auth";
 import { connectDb } from "@/lib/db";
 import { normalizeArea } from "@/lib/geo";
+import { isValidLatLng } from "@/lib/validation";
 import RescueTeamModel from "@/models/RescueTeam";
 import UserModel from "@/models/User";
 
@@ -35,10 +36,26 @@ const staffSchema = z.object({
   password: z.string().min(6)
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const actor = await requireApiAuth(req);
+  if (!actor) return unauthorized();
   await connectDb();
   const teams = await RescueTeamModel.find().sort({ createdAt: -1 }).lean();
-  return NextResponse.json({ teams });
+
+  if (actor.role === "admin") {
+    return NextResponse.json({ teams });
+  }
+
+  const sanitized = teams.map((team) => ({
+    _id: String(team._id),
+    name: team.name,
+    description: team.description,
+    phone: team.phone,
+    areaNames: team.areaNames,
+    location: team.location,
+    coverageRadiusKm: team.coverageRadiusKm
+  }));
+  return NextResponse.json({ teams: sanitized });
 }
 
 export async function POST(req: NextRequest) {
@@ -77,6 +94,9 @@ export async function POST(req: NextRequest) {
   if (!["admin", "rescue_team"].includes(actor.role)) return forbidden("Only admin or rescue team can create teams");
 
   const areaNames = input.areaNames.map((item) => normalizeArea(item)).filter(Boolean);
+  if (input.location && !isValidLatLng(input.location.lat, input.location.lng)) {
+    return NextResponse.json({ error: "Invalid team location coordinates" }, { status: 400 });
+  }
   const team = await RescueTeamModel.create({
     name: input.name.trim(),
     description: input.description.trim(),
@@ -112,7 +132,12 @@ export async function PATCH(req: NextRequest) {
   if (Array.isArray(input.areaNames)) {
     team.areaNames = input.areaNames.map((item) => normalizeArea(item)).filter(Boolean);
   }
-  if (input.location) team.location = input.location;
+  if (input.location) {
+    if (!isValidLatLng(input.location.lat, input.location.lng)) {
+      return NextResponse.json({ error: "Invalid team location coordinates" }, { status: 400 });
+    }
+    team.location = input.location;
+  }
   if (typeof input.coverageRadiusKm === "number") team.coverageRadiusKm = input.coverageRadiusKm;
 
   await team.save();

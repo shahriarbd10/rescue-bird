@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
   if (query.length < 3) {
     return NextResponse.json({ error: "Query must be at least 3 characters" }, { status: 400 });
   }
+  if (query.length > 120) {
+    return NextResponse.json({ error: "Query is too long" }, { status: 400 });
+  }
 
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("q", query);

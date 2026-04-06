@@ -2,6 +2,8 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiAuth, unauthorized } from "@/lib/auth";
 
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+
 function getCloudinaryConfig() {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
@@ -34,6 +36,9 @@ export async function POST(req: NextRequest) {
   if (!file.type.startsWith("audio/")) {
     return NextResponse.json({ error: "Only audio files are allowed" }, { status: 400 });
   }
+  if (file.size <= 0 || file.size > MAX_AUDIO_BYTES) {
+    return NextResponse.json({ error: "Audio file must be between 1 byte and 10 MB" }, { status: 400 });
+  }
 
   const timestamp = Math.floor(Date.now() / 1000);
   const signBase = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
@@ -46,10 +51,20 @@ export async function POST(req: NextRequest) {
   cloudinaryForm.append("signature", signature);
   cloudinaryForm.append("folder", folder);
 
-  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
-    method: "POST",
-    body: cloudinaryForm
-  });
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), 20000);
+  let uploadRes: Response;
+  try {
+    uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+      method: "POST",
+      body: cloudinaryForm,
+      signal: abortController.signal
+    });
+  } catch {
+    clearTimeout(timeout);
+    return NextResponse.json({ error: "Voice upload timed out or failed" }, { status: 502 });
+  }
+  clearTimeout(timeout);
 
   const uploadJson = await uploadRes.json();
   if (!uploadRes.ok) {

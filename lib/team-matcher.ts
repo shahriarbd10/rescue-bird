@@ -8,15 +8,15 @@ type Input = {
 };
 
 export async function findBestTeam(input: Input) {
+  const ranked = await findTeamCandidates(input, 1);
+  return ranked[0] || null;
+}
+
+export async function findTeamCandidates(input: Input, limit = 5) {
   const normalized = normalizeArea(input.area);
   const teams = await RescueTeamModel.find().lean();
 
-  let best:
-    | {
-        _id: string;
-        score: number;
-      }
-    | undefined;
+  const scored: Array<{ _id: string; score: number }> = [];
 
   for (const team of teams) {
     let score = 0;
@@ -35,12 +35,12 @@ export async function findBestTeam(input: Input) {
         score += Math.max(0, 80 - distance * 10);
       }
     }
-
-    if (!best || score > best.score) {
-      best = { _id: String(team._id), score };
+    if (score > 0) {
+      scored.push({ _id: String(team._id), score });
     }
   }
-
-  if (!best || best.score <= 0) return null;
-  return best._id;
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(1, limit))
+    .map((item) => item._id);
 }
